@@ -1116,11 +1116,7 @@ footer small {
   }
 
   .meal-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .meal-image {
-    height: 200px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1810,5 +1806,145 @@ footer small {
 
   .orders-banner h1 {
     font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: 58px;
+  }
+
+  body::after {
+    position: fixed;
+    z-index: 19;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 58px;
+    background: var(--orange);
+    content: "";
+    transition: transform .25s ease;
+  }
+
+  body.mobile-nav-hidden::after {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .navbar {
+    min-height: 58px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 5px 3%;
+  }
+
+  .navbar .brand {
+    flex: 0 0 100%;
+    gap: 4px;
+    font-size: .9rem;
+  }
+
+  .navbar .brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .navbar nav {
+    order: 2;
+    flex: 1 1 auto;
+    align-self: center;
+    width: auto;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: clamp(8px, 2vw, 14px);
+    font-size: .82rem;
+    transition: opacity .25s ease, visibility .25s ease;
+  }
+
+  .navbar .sign-out {
+    transition: opacity .25s ease, visibility .25s ease;
+  }
+
+  body.mobile-nav-hidden .navbar nav,
+  body.mobile-nav-hidden .navbar .sign-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .navbar nav a[href="orders.html"] {
+    position: fixed;
+    z-index: 22;
+    right: auto;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: 50%;
+    height: 58px;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgb(255 255 255 / 30%);
+    background: transparent;
+    color: white;
+    box-shadow: none;
+    font-weight: 900;
+    transition: transform .25s ease;
+  }
+
+  body.mobile-nav-hidden .navbar nav a[href="orders.html"],
+  body.mobile-nav-hidden .nav-actions .cart-button {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .nav-actions {
+    order: 3;
+    flex-shrink: 0;
+    gap: 0;
+    margin-left: auto;
+  }
+
+  .nav-actions .cart-button {
+    position: fixed;
+    z-index: 22;
+    right: 0;
+    bottom: 0;
+    width: 50%;
+    height: 58px;
+    border-top: 0;
+    border-radius: 0;
+    background: transparent;
+    color: white;
+    box-shadow: none;
+    transition: transform .25s ease;
+  }
+
+  .navbar #cartCount {
+    background: white;
+    color: var(--orange-dark);
+  }
+
+  .navbar .sign-out {
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+
+  .orders-page .navbar nav a[href="orders.html"] {
+    right: 0;
+    width: 100%;
+  }
+
+  .orders-page .navbar nav a[aria-current="page"]::after {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .navbar nav,
+  .navbar .sign-out,
+  body::after,
+  .navbar nav a[href="orders.html"],
+  .nav-actions .cart-button {
+    transition: none;
   }
 }

@@ -38,6 +38,29 @@ let ordersChannel = null;
 let expandedOrderIds = new Set();
 let highlightedOrderId = new URLSearchParams(window.location.search).get("order");
 let submittingOrder = false;
+let navigationIdleTimer;
+
+const mobileNavigationQuery = window.matchMedia("(max-width: 760px)");
+
+function updateMobileNavigationVisibility() {
+  if (!mobileNavigationQuery.matches) {
+    document.body.classList.remove("mobile-nav-hidden");
+    clearTimeout(navigationIdleTimer);
+    return;
+  }
+
+  document.body.classList.add("mobile-nav-hidden");
+  clearTimeout(navigationIdleTimer);
+  navigationIdleTimer = setTimeout(() => {
+    document.body.classList.remove("mobile-nav-hidden");
+  }, 700);
+}
+
+window.addEventListener("scroll", updateMobileNavigationVisibility, {
+  passive: true
+});
+
+mobileNavigationQuery.addEventListener("change", updateMobileNavigationVisibility);
 
 const FAVORITES_STORAGE_KEY = "riceRushFavorites";
 const MEAL_IMAGE_FALLBACK =
