@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#fff8ef">
   <title>Admin Dashboard | Rice Rush Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>
@@ -13,19 +16,24 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="admin.html">
-      <span class="brand-icon">🍚</span>
-      <span>Rice Rush <span class="brand-accent">Admin</span></span>
+    <a class="brand" href="admin.html" aria-label="Rice Rush Express admin dashboard">
+      <img class="brand-logo" data-dashboard-image="logo" alt="">
+      <span>Rice Rush <span class="brand-accent">Express</span></span>
     </a>
 
     <div class="topbar-actions">
       <span id="adminEmail" class="admin-email">Administrator</span>
-      <button id="logoutBtn" class="btn btn-light hidden" type="button">Log Out</button>
+      <button id="logoutBtn" class="btn btn-signout hidden" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 17l5-5-5-5M15 12H3m9-8h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"></path>
+        </svg>
+        <span>Sign Out</span>
+      </button>
     </div>
   </header>
 
   <main class="container">
-    <section id="dashboard" class="admin-layout hidden">
+    <section id="dashboard" class= "admin-layout hidden">
       <aside class="sidebar">
         <div class="sidebar-heading">
           <span class="sidebar-label">MAIN MENU</span>
@@ -63,12 +71,25 @@
             <span class="nav-icon">⚙</span>
             <span>Settings</span>
           </button>
+
+          <button class="nav-item" type="button" data-section="account">
+            <span class="nav-icon">♙</span>
+            <span>Administrator Account</span>
+          </button>
         </nav>
 
+        <div class="sidebar-featured">
+          <img data-dashboard-image="sidebarFood" alt="Rice Rush Express rice bowl">
+          <div>
+            <strong>Freshly made</strong>
+            <span>Made for sharing</span>
+          </div>
+        </div>
+
         <div class="sidebar-footer">
-          <div class="admin-avatar">A</div>
+          <div class="admin-avatar" id="adminAvatar">A</div>
           <div class="admin-identity-copy">
-            <strong>Administrator</strong>
+            <strong id="sidebarAdminName">Administrator</strong>
             <span>Rice Rush Express</span>
           </div>
         </div>
@@ -88,46 +109,90 @@
             </button>
           </div>
 
+          <section class="roadmap-banner" aria-labelledby="roadmapTitle">
+            <div class="roadmap-copy">
+              <p class="eyebrow">RICE RUSH EXPRESS</p>
+              <h2 id="roadmapTitle">Delivering Good Food, Every Day</h2>
+              <p>From our kitchen to your table, a little joy is always on the way.</p>
+            </div>
+            <div class="roadmap-art">
+              <svg class="roadmap-scene" viewBox="0 0 520 230" aria-hidden="true">
+                <path class="roadmap-hill" d="M0 164c64-52 106-42 160-15 54 27 84 20 139-9 73-39 140-22 221 18v72H0z"></path>
+                <path class="roadmap-road" d="M140 230c22-62 80-80 135-77 56 3 116 22 148 77"></path>
+                <path class="roadmap-road-line" d="M269 161c-4 22-8 45-9 69"></path>
+                <path class="roadmap-road-line" d="M329 174c10 19 17 38 23 56"></path>
+                <path class="roadmap-pin" d="M415 36c-22 0-40 18-40 40 0 31 40 69 40 69s40-38 40-69c0-22-18-40-40-40zm0 55a15 15 0 1 1 0-30 15 15 0 0 1 0 30z"></path>
+              </svg>
+              <img data-dashboard-image="roadmap" alt="Rice Rush Express delivery rider">
+            </div>
+          </section>
+
           <div class="stats-grid">
             <article class="stat-card">
-              <span>Total Orders</span>
-              <strong id="totalCount">0</strong>
-              <small>All customer orders</small>
+              <div class="stat-card-heading"><span class="stat-icon revenue-icon" aria-hidden="true">₱</span><span>Total Revenue</span></div>
+              <strong id="totalRevenue">Loading...</strong>
+              <small id="revenueState">Completed orders only</small>
             </article>
 
             <article class="stat-card">
-              <span>Pending</span>
-              <strong id="pendingCount">0</strong>
-              <small>Awaiting processing</small>
+              <div class="stat-card-heading"><span class="stat-icon orders-icon" aria-hidden="true">▣</span><span>Total Orders</span></div>
+              <strong id="totalCount">Loading...</strong>
+              <small id="ordersState">All customer orders</small>
             </article>
 
             <article class="stat-card">
-              <span>In Progress</span>
-              <strong id="progressCount">0</strong>
-              <small>Being processed or delivered</small>
+              <div class="stat-card-heading"><span class="stat-icon cancelled-icon" aria-hidden="true">!</span><span>Cancelled Orders</span></div>
+              <strong id="cancelledCount">Loading...</strong>
+              <small id="cancelledState">Orders marked cancelled</small>
             </article>
 
             <article class="stat-card">
-              <span>Completed</span>
-              <strong id="completedCount">0</strong>
-              <small>Successfully completed</small>
+              <div class="stat-card-heading"><span class="stat-icon visitors-icon" aria-hidden="true">◎</span><span>Visitors per Day</span></div>
+              <strong id="visitorCount">Tracking not configured</strong>
+              <small>Visitor tracking is not available</small>
             </article>
           </div>
 
-          <section class="orders-panel">
-            <div class="orders-toolbar">
-              <div>
-                <h2>Recent Orders</h2>
-                <p>View recently placed orders and the food customers selected.</p>
+          <div class="dashboard-panels">
+            <section class="content-panel customer-panel" aria-labelledby="topCustomersTitle">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">CUSTOMER ACTIVITY</p>
+                  <h2 id="topCustomersTitle">Top Customers</h2>
+                  <p>Customers ranked by their order count.</p>
+                </div>
               </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Customer Name</th>
+                      <th scope="col">Mobile Number</th>
+                      <th scope="col">No. of Orders</th>
+                      <th scope="col">Last Order</th>
+                    </tr>
+                  </thead>
+                  <tbody id="topCustomersBody">
+                    <tr><td colspan="4" class="table-state">Loading customer activity...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
 
-              <button class="btn btn-light" type="button" data-section="orders">
-                View All Orders
-              </button>
-            </div>
+            <section class="content-panel trending-panel" aria-labelledby="trendingTitle">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">MOST ORDERED</p>
+                  <h2 id="trendingTitle">Trending Dishes</h2>
+                  <p>Ranked by quantities sold.</p>
+                </div>
+              </div>
+              <div id="trendingDishesList" class="trending-dishes-list">
+                <p class="panel-state">Loading dish activity...</p>
+              </div>
+            </section>
+          </div>
 
-            <div id="recentOrdersList" class="orders-list"></div>
-          </section>
         </section>
 
         <section id="section-orders" class="content-section hidden">
@@ -256,17 +321,28 @@
           </section>
         </section>
 
+        <section id="section-account" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">AUTHORIZED PROFILE</p>
+              <h1>Administrator Account</h1>
+              <p>Account currently authorized to manage Rice Rush Express.</p>
+            </div>
+          </div>
+          <section class="orders-panel admin-account-panel">
+            <div class="admin-account-avatar" id="accountAvatar">A</div>
+            <div>
+              <h2 id="accountName">Administrator</h2>
+              <p id="accountEmail">Loading account...</p>
+              <span class="admin-role-badge">Verified administrator</span>
+            </div>
+          </section>
+        </section>
+
         <p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
       </div>
     </section>
   </main>
 
-  <script>
-    document.querySelectorAll("[data-refresh-orders]").forEach(button => {
-      button.addEventListener("click", () => {
-        document.getElementById("refreshBtn")?.click();
-      });
-    });
-  </script>
 </body>
 </html>

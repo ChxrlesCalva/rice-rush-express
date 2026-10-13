@@ -9,8 +9,17 @@ const $ = selector => document.querySelector(selector);
 
 const peso = amount => new Intl.NumberFormat("en-PH", {
   style: "currency",
-  currency: "PHP"
+  currency: "PHP",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 }).format(Number(amount) || 0);
+
+const dashboardImages = {
+  logo: "../images/newlogo.png",
+  roadmap: "../images/ricerush.png",
+  sidebarFood: "../images/newlogo.png",
+  fallback: "../images/newlogo.png"
+};
 
 const statuses = [
   "pending",
@@ -32,8 +41,7 @@ const statusLabels = {
   cancelled: "Cancelled"
 };
 
-const fallbackImage =
-  "https://placehold.co/700x450/fff0e3/8a4a24?text=Rice+Rush+Meal";
+const fallbackImage = dashboardImages.fallback;
 
 let allOrders = [];
 let currentUser = null;
@@ -287,70 +295,8 @@ function renderOrders() {
   }
 }
 
-function renderRecentOrders() {
-  const container = $("#recentOrdersList");
-  if (!container) return;
-
-  const recentOrders = [...allOrders]
-    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-    .slice(0, 5);
-
-  if (!recentOrders.length) {
-    container.innerHTML = `<div class="empty-state">No orders have been placed yet.</div>`;
-    return;
-  }
-
-  container.innerHTML = recentOrders.map(order => {
-    const items = getOrderItems(order);
-
-    const foodItems = items.length
-      ? `
-        <div class="recent-food-list">
-          ${items.map(item => `
-            <div class="recent-food-item">
-              ${createFoodImage(item, "recent-food-image")}
-              <div class="recent-food-info">
-                <strong class="recent-food-name">${escapeHTML(getOrderItemName(item))}</strong>
-                <span class="recent-food-quantity">Qty: ${Number(item.quantity) || 0}</span>
-                <strong class="recent-food-price">${peso(getOrderItemPrice(item))}</strong>
-              </div>
-            </div>
-          `).join("")}
-        </div>
-      `
-      : `<p>No food items found.</p>`;
-
-    return `
-      <article class="recent-order-card">
-        <div class="recent-order-header">
-          <div>
-            <h3>Order #${escapeHTML(order.id)}</h3>
-            <p>${escapeHTML(getOrderCustomer(order))}</p>
-            <small>${escapeHTML(formatDate(order.created_at))}</small>
-          </div>
-          ${statusBadge(order.status)}
-        </div>
-        ${foodItems}
-        <div class="recent-order-total">
-          <span>Order Total</span>
-          <strong>${peso(getOrderTotal(order))}</strong>
-        </div>
-      </article>
-    `;
-  }).join("");
-}
-
 function updateDashboardStats() {
   const total = allOrders.length;
-
-  const pending = allOrders.filter(order =>
-    normalizeStatus(order.status) === "pending"
-  ).length;
-
-  const inProgress = allOrders.filter(order =>
-    ["confirmed", "preparing", "ready", "out_for_delivery"]
-      .includes(normalizeStatus(order.status))
-  ).length;
 
   const completed = allOrders.filter(order =>
     normalizeStatus(order.status) === "completed"
@@ -365,14 +311,183 @@ function updateDashboardStats() {
     0
   );
 
+  if ($("#totalRevenue")) $("#totalRevenue").textContent = peso(revenue);
+  if ($("#revenueState")) $("#revenueState").textContent = "Completed orders only";
   if ($("#totalCount")) $("#totalCount").textContent = total;
-  if ($("#pendingCount")) $("#pendingCount").textContent = pending;
-  if ($("#progressCount")) $("#progressCount").textContent = inProgress;
-  if ($("#completedCount")) $("#completedCount").textContent = completed.length;
+  if ($("#ordersState")) $("#ordersState").textContent = "All customer orders";
+  if ($("#cancelledCount")) $("#cancelledCount").textContent = cancelled.length;
+  if ($("#cancelledState")) $("#cancelledState").textContent = "Orders marked cancelled";
   if ($("#reportTotalOrders")) $("#reportTotalOrders").textContent = total;
   if ($("#reportCompletedOrders")) $("#reportCompletedOrders").textContent = completed.length;
   if ($("#reportCancelledOrders")) $("#reportCancelledOrders").textContent = cancelled.length;
   if ($("#reportRevenue")) $("#reportRevenue").textContent = peso(revenue);
+}
+
+function setDashboardDataUnavailable() {
+  for (const [valueSelector, stateSelector] of [
+    ["#totalRevenue", "#revenueState"],
+    ["#totalCount", "#ordersState"],
+    ["#cancelledCount", "#cancelledState"]
+  ]) {
+    const value = $(valueSelector);
+    const state = $(stateSelector);
+    if (value) value.textContent = "Unavailable";
+    if (state) state.textContent = "Could not load dashboard data";
+  }
+
+  const customersBody = $("#topCustomersBody");
+  if (customersBody) {
+    customersBody.innerHTML =
+      '<tr><td colspan="4" class="table-state" role="alert">Could not load customer activity.</td></tr>';
+  }
+
+  const trendingList = $("#trendingDishesList");
+  if (trendingList) {
+    trendingList.innerHTML =
+      '<p class="panel-state" role="alert">Could not load dish activity.</p>';
+  }
+}
+
+function renderTopCustomers(orders) {
+  const body = $("#topCustomersBody");
+  if (!body) return;
+
+  const customers = new Map();
+
+  for (const order of orders) {
+    const customerId = order.customer_id;
+    const key = customerId
+      ? `id:${customerId}`
+      : `order:${order.id}`;
+    const existing = customers.get(key);
+    const timestamp = order.created_at
+      ? new Date(order.created_at).getTime()
+      : 0;
+
+    if (existing) {
+      existing.orderCount += 1;
+      if (timestamp > existing.lastOrderTime) {
+        existing.lastOrderTime = timestamp;
+        existing.lastOrder = order.created_at;
+      }
+      if (!existing.phone && order.phone) existing.phone = order.phone;
+      if ((!existing.name || existing.name === "Customer") && order.customer_name) {
+        existing.name = order.customer_name;
+      }
+      continue;
+    }
+
+    customers.set(key, {
+      name: order.customer_name || "Customer",
+      phone: order.phone || "Not provided",
+      orderCount: 1,
+      lastOrderTime: timestamp,
+      lastOrder: order.created_at
+    });
+  }
+
+  const topCustomers = [...customers.values()]
+    .sort((a, b) =>
+      b.orderCount - a.orderCount ||
+      b.lastOrderTime - a.lastOrderTime
+    )
+    .slice(0, 5);
+
+  if (!topCustomers.length) {
+    body.innerHTML =
+      '<tr><td colspan="4" class="table-state">No customer order data is available yet.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = topCustomers.map(customer => `
+    <tr>
+      <td><span class="customer-name-cell"><span class="customer-table-avatar" aria-hidden="true">♙</span>${escapeHTML(customer.name)}</span></td>
+      <td>${escapeHTML(customer.phone)}</td>
+      <td><span class="customer-order-count">${customer.orderCount}</span></td>
+      <td>${escapeHTML(formatDate(customer.lastOrder))}</td>
+    </tr>
+  `).join("");
+}
+
+function renderTrendingDishes(orders, menuItems, menuError = null) {
+  const container = $("#trendingDishesList");
+  if (!container) return;
+
+  if (menuError) {
+    container.innerHTML =
+      '<p class="panel-state" role="alert">Dish images and prices could not be loaded. Try refreshing the dashboard.</p>';
+    return;
+  }
+
+  const menuById = new Map(
+    menuItems.map(item => [String(item.id), item])
+  );
+  const dishes = new Map();
+
+  for (const order of orders) {
+    for (const item of getOrderItems(order)) {
+      const key = item.menu_item_id !== null && item.menu_item_id !== undefined
+        ? `id:${item.menu_item_id}`
+        : `name:${String(getOrderItemName(item)).toLowerCase()}`;
+      const menuItem = item.menu_item_id === null || item.menu_item_id === undefined
+        ? null
+        : menuById.get(String(item.menu_item_id));
+      const quantity = Number(item.quantity) || 0;
+      const existing = dishes.get(key);
+
+      if (existing) {
+        existing.quantitySold += quantity;
+        continue;
+      }
+
+      dishes.set(key, {
+        name: menuItem?.name || getOrderItemName(item),
+        price: menuItem?.price == null
+          ? Number(item.unit_price) || 0
+          : Number(menuItem.price) || 0,
+        image: menuItem?.image_url || item.image_url || fallbackImage,
+        quantitySold: quantity
+      });
+    }
+  }
+
+  const trendingDishes = [...dishes.values()]
+    .sort((a, b) => b.quantitySold - a.quantitySold)
+    .slice(0, 5);
+
+  if (!trendingDishes.length) {
+    container.innerHTML =
+      '<p class="panel-state">No dish sales are available yet.</p>';
+    return;
+  }
+
+  container.innerHTML = trendingDishes.map(dish => `
+    <article class="trending-dish">
+      ${createFoodImage({
+        image_url: dish.image,
+        item_name: dish.name
+      }, "trending-dish-image")}
+      <div class="trending-dish-info">
+        <strong>${escapeHTML(dish.name)}</strong>
+        <span>${peso(dish.price)}</span>
+      </div>
+      <span class="trending-dish-count">${dish.quantitySold} sold</span>
+    </article>
+  `).join("");
+}
+
+function initializeDashboardImages() {
+  document.querySelectorAll("[data-dashboard-image]").forEach(image => {
+    const imageName = image.dataset.dashboardImage;
+    const imagePath = dashboardImages[imageName];
+
+    if (!imagePath) {
+      console.error(`No dashboard image is configured for "${imageName}".`);
+      return;
+    }
+
+    image.src = imagePath;
+  });
 }
 
 async function loadOrders() {
@@ -414,16 +529,23 @@ async function loadOrders() {
     ];
 
     const imageMap = new Map();
+    let menuItems = [];
+    let menuError = null;
 
     if (menuItemIds.length) {
-      const { data: menuItems, error: menuError } = await db
+      const { data, error } = await db
         .from("menu_items")
-        .select("id, image_url")
+        .select("id, name, price, image_url")
         .in("id", menuItemIds);
 
-      if (menuError) throw menuError;
+      if (error) {
+        menuError = error;
+        console.error("Failed to load menu data for trending dishes:", error);
+      } else {
+        menuItems = data || [];
+      }
 
-      (menuItems || []).forEach(item => {
+      menuItems.forEach(item => {
         imageMap.set(String(item.id), item.image_url || "");
       });
     }
@@ -440,11 +562,15 @@ async function loadOrders() {
     }));
 
     renderOrders();
-    renderRecentOrders();
     updateDashboardStats();
+    renderTopCustomers(allOrders);
+    renderTrendingDishes(allOrders, menuItems, menuError);
     showMessage("");
   } catch (error) {
     console.error("Failed to load orders:", error);
+    setDashboardDataUnavailable();
+    $("#ordersList").innerHTML =
+      '<div class="empty-state" role="alert">Could not load orders. Please refresh and try again.</div>';
     showMessage(error.message || "Unable to load orders. Please try again.", "error");
   } finally {
     isLoadingOrders = false;
@@ -487,7 +613,6 @@ async function updateOrderStatus(orderId, newStatus, selectElement) {
     );
 
     renderOrders();
-    renderRecentOrders();
     updateDashboardStats();
 
     showMessage(`Order #${orderId} updated to ${statusLabels[newStatus]}.`, "success");
@@ -512,7 +637,6 @@ function showSection(sectionName) {
   });
 
   if (sectionName === "orders") renderOrders();
-  if (sectionName === "overview") renderRecentOrders();
 }
 
 async function verifyAdmin(user) {
@@ -546,6 +670,13 @@ function showDashboard(user) {
 
   if ($("#adminEmail")) $("#adminEmail").textContent = user.email || "Administrator";
   if ($("#settingsEmail")) $("#settingsEmail").value = user.email || "";
+  if ($("#accountEmail")) $("#accountEmail").textContent = user.email || "Email unavailable";
+  if ($("#sidebarAdminName")) $("#sidebarAdminName").textContent = user.email || "Administrator";
+  if ($("#accountName")) $("#accountName").textContent = user.email || "Administrator";
+
+  const initial = (user.email || "A").trim().charAt(0).toUpperCase();
+  if ($("#adminAvatar")) $("#adminAvatar").textContent = initial;
+  if ($("#accountAvatar")) $("#accountAvatar").textContent = initial;
 
   showSection("overview");
   loadOrders();
@@ -590,6 +721,8 @@ function redirectToSharedLogin(accessReason) {
 }
 
 async function initializeAdmin() {
+  initializeDashboardImages();
+
   if (!db) {
     console.error("Supabase is not initialized. Check supabase-config.js.");
     redirectToSharedLogin("profile-error");

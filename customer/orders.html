@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="customer.css">
 </head>
 
-<body>
+<body class="orders-page">
   <header class="navbar">
     <a href="customer.html#home" class="brand">
       <img src="../images/newlogo.png" alt="Rice Rush Express Logo" class="brand-logo">
@@ -23,22 +23,46 @@
     <nav>
       <a href="customer.html#home">Home</a>
       <a href="customer.html#menu">Menu</a>
-      <a href="orders.html" aria-current="page">My Orders</a>
+      <a href="orders.html" class="active" aria-current="page">My Order</a>
     </nav>
 
     <div class="nav-actions">
-      <a href="../index.html" class="sign-out">Sign Out</a>
+      <a href="../index.html" class="sign-out">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 17l5-5-5-5M15 12H3m9-8h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"></path>
+        </svg>
+        <span>Sign Out</span>
+      </a>
     </div>
   </header>
 
-  <main>
-    <section class="orders-section" id="orders">
-      <p class="eyebrow">YOUR RECENT ACTIVITY</p>
-      <h2>My Orders</h2>
-      <p class="orders-description">View your order history and track the status of your orders.</p>
+  <main class="orders-dashboard">
+    <aside class="orders-banner" aria-labelledby="ordersBannerTitle">
+      <div class="orders-banner-copy">
+        <p class="eyebrow">MADE WITH LOVE, DELIVERED WITH CARE</p>
+        <h1 id="ordersBannerTitle">Good Food Brings People Together</h1>
+        <p>Every meal is a little moment worth sharing.</p>
+      </div>
+      <div class="orders-banner-art">
+        <img
+          data-order-banner-image
+          alt="A freshly prepared rice meal"
+          loading="lazy"
+        >
+      </div>
+      <span class="orders-banner-decoration orders-banner-decoration-one" aria-hidden="true"></span>
+      <span class="orders-banner-decoration orders-banner-decoration-two" aria-hidden="true"></span>
+    </aside>
 
-      <div id="ordersList" class="orders-list">
-        <p class="empty-message">Loading your orders...</p>
+    <section class="orders-history" id="orders" aria-labelledby="ordersTitle">
+      <div class="orders-heading">
+        <p class="eyebrow">YOUR RECENT ACTIVITY</p>
+        <h2 id="ordersTitle">My Orders</h2>
+        <p class="orders-description">Track your orders and view your order history.</p>
+      </div>
+
+      <div id="ordersList" class="orders-list" aria-live="polite" aria-busy="true">
+        <p class="orders-loading-state" role="status">Loading your orders...</p>
       </div>
     </section>
   </main>

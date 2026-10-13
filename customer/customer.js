@@ -41,7 +41,9 @@ let submittingOrder = false;
 
 const FAVORITES_STORAGE_KEY = "riceRushFavorites";
 const MEAL_IMAGE_FALLBACK =
-  "https://placehold.co/120x120/fff0e3/8a4a24?text=Rice+Rush";
+  "https://placehold.co/160x120/fff0e3/8a4a24?text=Rice+Rush";
+const ORDER_BANNER_IMAGE_URL =
+  "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=900&q=85";
 
 function loadFavorites() {
   try {
@@ -355,15 +357,61 @@ function updateAddressRequirement() {
 function getStatusLabel(status) {
   const labels = {
     pending: "Pending",
-    confirmed: "Cooking",
+    confirmed: "Confirmed",
     preparing: "Preparing",
-    ready: "Ready to Deliver",
+    ready: "Ready",
     out_for_delivery: "Out for Delivery",
     completed: "Completed",
+    delivered: "Delivered",
     cancelled: "Cancelled"
   };
 
   return labels[status] || "Status unavailable";
+}
+
+function getStatusClass(status) {
+  return ({
+    pending: "pending",
+    confirmed: "confirmed",
+    preparing: "preparing",
+    ready: "ready",
+    out_for_delivery: "out-for-delivery",
+    completed: "completed",
+    delivered: "delivered",
+    cancelled: "cancelled"
+  })[status] || "unknown";
+}
+
+function formatOrderDate(timestamp) {
+  if (!timestamp) return "Date unavailable";
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function applyImageFallback(image) {
+  image.addEventListener("error", () => {
+    if (image.dataset.fallbackApplied) return;
+
+    image.dataset.fallbackApplied = "true";
+    image.src = MEAL_IMAGE_FALLBACK;
+  }, { once: true });
+}
+
+function initializeOrdersBanner() {
+  const bannerImage = document.querySelector("[data-order-banner-image]");
+  if (!bannerImage) return;
+
+  bannerImage.src = ORDER_BANNER_IMAGE_URL;
+  applyImageFallback(bannerImage);
 }
 
 function getProgressIndex(status) {
@@ -373,7 +421,8 @@ function getProgressIndex(status) {
     preparing: 2,
     ready: 3,
     out_for_delivery: 3,
-    completed: 3
+    completed: 3,
+    delivered: 3
   };
 
   return progress[status] ?? -1;
@@ -454,12 +503,38 @@ function renderOrderItems(items) {
   }).join("");
 }
 
+function renderCalendarIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="16" rx="2"></rect>
+      <path d="M7.5 3v4M16.5 3v4M3.5 9.5h17"></path>
+    </svg>
+  `;
+}
+
+function renderUtensilsIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3v7M4.5 3v4.5A2.5 2.5 0 0 0 7 10a2.5 2.5 0 0 0 2.5-2.5V3M7 10v11M16 3v18M16 3c2.5 2.4 3.5 5.2 3.5 8H16"></path>
+    </svg>
+  `;
+}
+
+function renderEyeIcon() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"></path>
+      <circle cx="12" cy="12" r="2.5"></circle>
+    </svg>
+  `;
+}
+
 function renderOrders() {
   if (!ordersList) return;
 
   if (!customerOrders.length) {
     ordersList.innerHTML =
-      '<p class="empty-message">You haven\'t placed an order yet.</p>';
+      '<div class="orders-empty-state"><span class="orders-empty-icon" aria-hidden="true">🍚</span><h3>No orders yet</h3><p>You haven\'t placed an order yet. Your next favorite meal is just a few clicks away.</p><a href="customer.html#menu" class="orders-browse-link">Browse the menu</a></div>';
     return;
   }
 
@@ -476,48 +551,85 @@ function renderOrders() {
     const status = String(order.status || "pending").toLowerCase();
     const orderId = String(order.id);
     const expanded = expandedOrderIds.has(orderId);
-    const date = order.created_at
-      ? new Date(order.created_at).toLocaleString("en-PH")
-      : "Date unavailable";
+    const date = formatOrderDate(order.created_at);
     const total = Number(order.total) || 0;
     const orderType = String(order.order_type || "").toLowerCase();
     const delivery = orderType === "delivery";
+    const firstItem = items[0];
+    const firstItemName = firstItem?.item_name || "Ordered meal";
+    const firstItemImage = firstItem?.image_url || MEAL_IMAGE_FALLBACK;
+    const itemSummary = items.length
+      ? items.map(item => {
+        const quantity = Number(item.quantity) || 0;
+        return `${escapeHTML(item.item_name || "Meal")} (×${quantity})`;
+      }).join(", ")
+      : "Order item details are unavailable.";
 
     return `
-      <article class="order-card">
-        <button
-          type="button"
-          class="order-toggle"
-          data-order-toggle="${escapeHTML(orderId)}"
-          aria-expanded="${expanded}"
+      <article class="order-history-card">
+        <img
+          class="order-history-image"
+          src="${escapeHTML(firstItemImage)}"
+          alt="${escapeHTML(firstItemName)}"
+          loading="lazy"
         >
-          <div class="order-card-top">
-            <div>
-              <h3>Order #${escapeHTML(orderId)}</h3>
-              <p class="order-meta">${escapeHTML(date)}</p>
-            </div>
-            <span class="order-status status-${escapeHTML(status)}">
+
+        <div class="order-history-info">
+          <h3>Order #${escapeHTML(orderId)}</h3>
+          <p class="order-history-date">
+            ${renderCalendarIcon()}
+            <span>${escapeHTML(date)}</span>
+          </p>
+          <p class="order-history-items">
+            ${renderUtensilsIcon()}
+            <span>${itemSummary}</span>
+          </p>
+          <p class="order-history-total">
+            <span>Total</span>
+            <strong>${peso(total)}</strong>
+          </p>
+        </div>
+
+        <div class="order-history-actions">
+          <span class="order-status status-${getStatusClass(status)}">
+            ${escapeHTML(getStatusLabel(status))}
+          </span>
+          <button
+            type="button"
+            class="order-details-button"
+            data-order-toggle="${escapeHTML(orderId)}"
+            aria-expanded="${expanded}"
+            aria-controls="order-details-${escapeHTML(orderId)}"
+          >
+            ${renderEyeIcon()}
+            <span>${expanded ? "Hide Details" : "View Details"}</span>
+          </button>
+        </div>
+
+        <div
+          id="order-details-${escapeHTML(orderId)}"
+          class="order-tracking-details"
+          ${expanded ? "" : "hidden"}
+        >
+          <div class="tracking-heading">
+            <h3>Track Your Order</h3>
+            <span class="order-status status-${getStatusClass(status)}">
               ${escapeHTML(getStatusLabel(status))}
             </span>
           </div>
-          <div class="order-detail-row">
-            <span>${items.length} ${items.length === 1 ? "item type" : "item types"} · ${peso(total)}</span>
-            <span class="order-toggle-hint">${expanded ? "Hide tracking⌃" : "View tracking⌄"}</span>
-          </div>
-        </button>
-
-        <div class="order-items-preview">
-          <h4>Items in This Order</h4>
-          ${renderOrderItems(items)}
-        </div>
-
-        <div class="order-tracking-details" ${expanded ? "" : "hidden"}>
-          <div class="tracking-heading">
-            <h3>Track Your Order</h3>
-            <span class="order-status">${escapeHTML(getStatusLabel(status))}</span>
-          </div>
 
           ${renderTrackingProgress(status)}
+
+          <div class="tracking-items">
+            <h4>Items in This Order</h4>
+            ${renderOrderItems(items)}
+            <div class="tracking-total">
+              <div class="tracking-total-row">
+                <span>Order Total</span>
+                <strong>${peso(total)}</strong>
+              </div>
+            </div>
+          </div>
 
           <div class="tracking-order-details">
             <h4>Order Details</h4>
@@ -555,6 +667,9 @@ function renderOrders() {
     `;
   }).join("");
 
+  ordersList.querySelectorAll(".order-history-image, .tracking-item-image")
+    .forEach(applyImageFallback);
+
   if (newlyPlacedOrder) {
     showToast(`Order #${highlightedOrderId} placed successfully!`);
     highlightedOrderId = null;
@@ -563,6 +678,9 @@ function renderOrders() {
 
 async function loadCustomerOrders() {
   if (!ordersList) return;
+  ordersList.innerHTML =
+    '<p class="orders-loading-state" role="status">Loading your orders...</p>';
+  ordersList.setAttribute("aria-busy", "true");
 
   try {
     const {
@@ -576,7 +694,8 @@ async function loadCustomerOrders() {
       customerOrders = [];
       expandedOrderIds.clear();
       ordersList.innerHTML =
-        '<p class="empty-message">Please log in to view your orders.</p>';
+        '<div class="orders-empty-state"><h3>Please sign in to view your orders</h3><a href="../index.html" class="orders-browse-link">Go to sign in</a></div>';
+      ordersList.setAttribute("aria-busy", "false");
       return;
     }
 
@@ -637,16 +756,13 @@ async function loadCustomerOrders() {
 
     customerOrders = data || [];
     renderOrders();
-    ordersList.querySelectorAll(".tracking-item-image").forEach(image => {
-      image.addEventListener("error", () => {
-        image.src = MEAL_IMAGE_FALLBACK;
-      }, { once: true });
-    });
+    ordersList.setAttribute("aria-busy", "false");
   } catch (error) {
     console.error("Could not load customer orders:", error);
 
     ordersList.innerHTML =
-      '<p class="empty-message">Could not load your orders. Please refresh and try again.</p>';
+      '<div class="orders-error-state" role="alert"><h3>We couldn’t load your orders</h3><p>Please check your connection and try again.</p><button type="button" class="orders-retry-button" data-orders-retry>Try Again</button></div>';
+    ordersList.setAttribute("aria-busy", "false");
   }
 }
 
@@ -878,11 +994,18 @@ if (cartItems) {
 
 if (ordersList) {
   ordersList.addEventListener("click", event => {
+    const retryButton = event.target.closest("[data-orders-retry]");
+
+    if (retryButton) {
+      loadCustomerOrders();
+      return;
+    }
+
     const button = event.target.closest("[data-order-toggle]");
     if (!button) return;
 
     const orderId = String(button.dataset.orderToggle);
-    const card = button.closest(".order-card");
+    const card = button.closest(".order-history-card");
     const details = card?.querySelector(".order-tracking-details");
 
     if (!details) return;
@@ -896,12 +1019,8 @@ if (ordersList) {
     }
 
     button.setAttribute("aria-expanded", String(!details.hidden));
-
-    const hint = button.querySelector(".order-toggle-hint");
-
-    if (hint) {
-      hint.textContent = details.hidden ? "View tracking⌄" : "Hide tracking⌃";
-    }
+    button.querySelector("span").textContent =
+      details.hidden ? "View Details" : "Hide Details";
   });
 }
 
@@ -926,6 +1045,16 @@ document.addEventListener("keydown", event => {
 
 updateAddressRequirement();
 renderCart();
+initializeOrdersBanner();
 loadMeals();
 loadCustomerOrders();
 subscribeToOrderUpdates();
+
+window.addEventListener("pagehide", () => {
+  if (!ordersChannel) return;
+
+  supabaseClient.removeChannel(ordersChannel).catch(error => {
+    console.error("Could not clean up customer order updates:", error);
+  });
+  ordersChannel = null;
+});
