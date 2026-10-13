@@ -38,6 +38,18 @@ function showMessage(element, message, type = "error") {
   element.className = `form-message visible ${type}`;
 }
 
+const accessMessages = {
+  "login-required": "Please sign in to continue.",
+  "profile-error": "We couldn't verify your account role. Please sign in again or contact the administrator.",
+  "unsupported-role": "Your account role does not have an implemented dashboard. Contact the administrator."
+};
+
+const accessMessage = new URLSearchParams(window.location.search).get("access");
+
+if (typeof accessMessages[accessMessage] === "string") {
+  showMessage(loginMessage, accessMessages[accessMessage]);
+}
+
 // Check that Supabase was loaded by the HTML files.
 function getSupabase() {
   if (typeof supabaseClient === "undefined") {
@@ -177,7 +189,6 @@ if (loginForm) {
 
       if (error) throw error;
 
-      // Read the signed-in user's assigned application role.
       const { data: profile, error: profileError } = await client
         .from("profiles")
         .select("role")
@@ -186,6 +197,8 @@ if (loginForm) {
 
       if (profileError) {
         console.error("Profile lookup error:", profileError);
+        const { error: signOutError } = await client.auth.signOut();
+        if (signOutError) console.error("Could not clear unverified login:", signOutError);
         showMessage(
           loginMessage,
           "You signed in, but we couldn't load your profile. Please contact the administrator."
@@ -193,16 +206,28 @@ if (loginForm) {
         return;
       }
 
-      const role = profile?.role || "customer";
+      const role = profile?.role;
 
-      const destinations = {
-        admin: "admin/admin.html",
-        order_manager: "order-manager/orders.html",
-        rider: "rider/rider.html",
-        customer: "customer/customer.html"
-      };
+      const destination = role === "admin"
+        ? "admin/admin.html"
+        : role === "customer"
+          ? "customer/customer.html"
+          : null;
 
-      window.location.href = destinations[role] || destinations.customer;
+      if (!destination) {
+        const { error: signOutError } = await client.auth.signOut();
+        if (signOutError) console.error("Could not clear unsupported login:", signOutError);
+
+        showMessage(
+          loginMessage,
+          !role
+            ? "Your account role is missing. Please contact the administrator."
+            : "Your account role does not have an implemented dashboard. Contact the administrator."
+        );
+        return;
+      }
+
+      window.location.href = destination;
     } catch (error) {
       console.error("Login error:", error);
       showMessage(

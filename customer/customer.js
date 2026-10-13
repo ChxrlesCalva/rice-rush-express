@@ -36,9 +36,12 @@ let toastTimer;
 let customerOrders = [];
 let ordersChannel = null;
 let expandedOrderIds = new Set();
+let highlightedOrderId = new URLSearchParams(window.location.search).get("order");
 let submittingOrder = false;
 
 const FAVORITES_STORAGE_KEY = "riceRushFavorites";
+const MEAL_IMAGE_FALLBACK =
+  "https://placehold.co/120x120/fff0e3/8a4a24?text=Rice+Rush";
 
 function loadFavorites() {
   try {
@@ -431,11 +434,18 @@ function renderOrderItems(items) {
     const lineTotal = item.line_total == null
       ? unitPrice * quantity
       : Number(item.line_total);
+    const image = item.image_url || MEAL_IMAGE_FALLBACK;
 
     return `
       <div class="tracking-item-row">
-        <div class="tracking-item-name">
-          ${escapeHTML(item.item_name)}
+        <img
+          class="tracking-item-image"
+          src="${escapeHTML(image)}"
+          alt="${escapeHTML(item.item_name || "Ordered meal")}"
+          loading="lazy"
+        >
+        <div class="tracking-item-info">
+          <div class="tracking-item-name">${escapeHTML(item.item_name)}</div>
           <p class="tracking-item-meta">${quantity} × ${peso(unitPrice)}</p>
         </div>
         <strong>${peso(lineTotal)}</strong>
@@ -457,6 +467,9 @@ function renderOrders() {
   expandedOrderIds = new Set(
     [...expandedOrderIds].filter(id => validIds.has(id))
   );
+  const newlyPlacedOrder = highlightedOrderId && validIds.has(highlightedOrderId);
+
+  if (newlyPlacedOrder) expandedOrderIds.add(highlightedOrderId);
 
   ordersList.innerHTML = customerOrders.map(order => {
     const items = order.order_items || [];
@@ -493,6 +506,11 @@ function renderOrders() {
           </div>
         </button>
 
+        <div class="order-items-preview">
+          <h4>Items in This Order</h4>
+          ${renderOrderItems(items)}
+        </div>
+
         <div class="order-tracking-details" ${expanded ? "" : "hidden"}>
           <div class="tracking-heading">
             <h3>Track Your Order</h3>
@@ -500,17 +518,6 @@ function renderOrders() {
           </div>
 
           ${renderTrackingProgress(status)}
-
-          <div class="tracking-items">
-            <h4>Order Items</h4>
-            ${renderOrderItems(items)}
-            <div class="tracking-total">
-              <div class="tracking-total-row">
-                <span>Order Total</span>
-                <strong>${peso(total)}</strong>
-              </div>
-            </div>
-          </div>
 
           <div class="tracking-order-details">
             <h4>Order Details</h4>
@@ -547,6 +554,11 @@ function renderOrders() {
       </article>
     `;
   }).join("");
+
+  if (newlyPlacedOrder) {
+    showToast(`Order #${highlightedOrderId} placed successfully!`);
+    highlightedOrderId = null;
+  }
 }
 
 async function loadCustomerOrders() {
@@ -584,6 +596,7 @@ async function loadCustomerOrders() {
         created_at,
         order_items (
           item_name,
+          menu_item_id,
           quantity,
           unit_price,
           line_total
@@ -594,8 +607,41 @@ async function loadCustomerOrders() {
 
     if (error) throw error;
 
+    const menuItemIds = [...new Set(
+      (data || []).flatMap(order => order.order_items || [])
+        .map(item => Number(item.menu_item_id))
+        .filter(Number.isFinite)
+    )];
+    let mealImages = new Map();
+
+    if (menuItemIds.length) {
+      const { data: menuItems, error: menuItemsError } = await supabaseClient
+        .from("menu_items")
+        .select("id, image_url")
+        .in("id", menuItemIds);
+
+      if (menuItemsError) {
+        console.error("Could not load meal images for customer orders:", menuItemsError);
+      } else {
+        mealImages = new Map(
+          (menuItems || []).map(item => [String(item.id), item.image_url])
+        );
+      }
+    }
+
+    for (const order of data || []) {
+      for (const item of order.order_items || []) {
+        item.image_url = mealImages.get(String(item.menu_item_id)) || "";
+      }
+    }
+
     customerOrders = data || [];
     renderOrders();
+    ordersList.querySelectorAll(".tracking-item-image").forEach(image => {
+      image.addEventListener("error", () => {
+        image.src = MEAL_IMAGE_FALLBACK;
+      }, { once: true });
+    });
   } catch (error) {
     console.error("Could not load customer orders:", error);
 
@@ -605,6 +651,8 @@ async function loadCustomerOrders() {
 }
 
 async function subscribeToOrderUpdates() {
+  if (!ordersList) return;
+
   try {
     const {
       data: { user },
@@ -747,12 +795,7 @@ if (checkoutForm) {
       updateAddressRequirement();
       closeCheckout();
 
-      expandedOrderIds.add(String(order.id));
-
-      await loadCustomerOrders();
-      showToast(`Order #${order.id} placed successfully!`);
-
-      $("#orders")?.scrollIntoView({ behavior: "smooth" });
+      window.location.assign(`orders.html?order=${encodeURIComponent(order.id)}`);
     } catch (error) {
       console.error("Checkout error:", error);
 

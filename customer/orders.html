@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FF6900">
+  <title>My Orders | Rice Rush Express</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="customer.css">
+</head>
+
+<body>
+  <header class="navbar">
+    <a href="customer.html#home" class="brand">
+      <img src="../images/newlogo.png" alt="Rice Rush Express Logo" class="brand-logo">
+      Rice Rush <span>Express</span>
+    </a>
+
+    <nav>
+      <a href="customer.html#home">Home</a>
+      <a href="customer.html#menu">Menu</a>
+      <a href="orders.html" aria-current="page">My Orders</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a href="../index.html" class="sign-out">Sign Out</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="orders-section" id="orders">
+      <p class="eyebrow">YOUR RECENT ACTIVITY</p>
+      <h2>My Orders</h2>
+      <p class="orders-description">View your order history and track the status of your orders.</p>
+
+      <div id="ordersList" class="orders-list">
+        <p class="empty-message">Loading your orders...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <img src="../images/newlogo.png" alt="Rice Rush Express" class="brand-logo">
+    <p>Made with ❤️ for rice meal lovers.</p>
+    <small>© 2026 Rice Rush Express — Student Project</small>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="customer.js"></script>
+</body>
+</html>

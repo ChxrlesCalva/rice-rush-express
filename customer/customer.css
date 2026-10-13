@@ -88,6 +88,10 @@ a {
   color: var(--orange);
 }
 
+.navbar nav a[aria-current="page"] {
+  color: var(--orange-dark);
+}
+
 .cart-button,
 .sign-out {
   border: 0;
@@ -405,6 +409,11 @@ select:focus {
   text-align: center;
 }
 
+.orders-description {
+  color: var(--muted);
+  text-align: center;
+}
+
 .orders-list {
   max-width: 850px;
   margin: 25px auto 0;
@@ -598,31 +607,41 @@ select:focus {
   line-height: 1.6;
 }
 
-.tracking-items {
-  margin-top: 20px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: white;
+.order-items-preview {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 
-.tracking-items h4,
+.order-items-preview h4,
 .tracking-order-details h4 {
   margin-bottom: 14px;
   font-size: 1rem;
 }
 
-.tracking-item-row,
-.tracking-total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.tracking-item-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
   padding: 10px 0;
 }
 
 .tracking-item-row + .tracking-item-row {
   border-top: 1px solid var(--border);
+}
+
+.tracking-item-image {
+  display: block;
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--cream);
+}
+
+.tracking-item-info {
+  min-width: 0;
 }
 
 .tracking-item-name {
@@ -635,17 +654,6 @@ select:focus {
   margin-top: 4px;
   color: var(--muted);
   font-size: .85rem;
-}
-
-.tracking-total {
-  margin-top: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
-
-.tracking-total-row:last-child {
-  font-size: 1.2rem;
-  font-weight: 900;
 }
 
 .tracking-order-details {
@@ -1082,7 +1090,6 @@ footer small {
     gap: 12px;
   }
 
-  .tracking-items,
   .tracking-order-details {
     padding: 14px;
   }

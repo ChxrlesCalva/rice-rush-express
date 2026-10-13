@@ -59,15 +59,6 @@ function showMessage(message = "", type = "") {
   }
 }
 
-function showLoginMessage(message = "", type = "") {
-  const element = $("#loginMessage");
-
-  if (element) {
-    element.textContent = message;
-    element.className = `message ${type}`.trim();
-  }
-}
-
 function getItemImage(item) {
   return (
     item?.image_url ||
@@ -526,31 +517,30 @@ function showSection(sectionName) {
 
 async function verifyAdmin(user) {
   if (!user?.id) {
-    throw new Error("Unable to verify your administrator account.");
+    throw new Error("Unable to verify your account.");
   }
 
   const { data, error } = await db
-    .from("admin_users")
-    .select("user_id")
-    .eq("user_id", user.id)
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
     .maybeSingle();
 
   if (error) {
-    console.error("Admin authorization check failed:", error);
-    throw new Error("Unable to verify administrator access. Check your Supabase permissions.");
+    console.error("Profile role verification failed:", error);
+    throw new Error("Unable to verify your account role.");
   }
 
-  if (!data) {
-    throw new Error("This account is not authorized to access the admin dashboard.");
+  if (!data?.role) {
+    throw new Error("Your account role is missing.");
   }
 
-  return true;
+  return data.role;
 }
 
 function showDashboard(user) {
   currentUser = user;
 
-  $("#loginPanel")?.classList.add("hidden");
   $("#dashboard")?.classList.remove("hidden");
   $("#logoutBtn")?.classList.remove("hidden");
 
@@ -562,95 +552,15 @@ function showDashboard(user) {
   subscribeToOrderChanges();
 }
 
-function showLogin() {
-  currentUser = null;
-
-  $("#dashboard")?.classList.add("hidden");
-  $("#loginPanel")?.classList.remove("hidden");
-  $("#logoutBtn")?.classList.add("hidden");
-
-  if ($("#adminEmail")) $("#adminEmail").textContent = "Administrator";
-  if ($("#settingsEmail")) $("#settingsEmail").value = "";
-
-  allOrders = [];
-
-  renderOrders();
-  renderRecentOrders();
-  updateDashboardStats();
-
-  if (orderChannel) {
-    db.removeChannel(orderChannel);
-    orderChannel = null;
-  }
-}
-
-async function handleLogin(event) {
-  event.preventDefault();
-  showLoginMessage("Signing in...");
-
-  const email = $("#email")?.value.trim();
-  const password = $("#password")?.value;
-
-  if (!email || !password) {
-    showLoginMessage("Enter your email and password.", "error");
-    return;
-  }
-
-  try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-
-    if (error) throw error;
-
-    await verifyAdmin(data.user);
-    showLoginMessage("");
-    showDashboard(data.user);
-  } catch (error) {
-    console.error("Admin login failed:", error);
-    await db.auth.signOut();
-
-    showLoginMessage(
-      error.message || "Unable to sign in. Please check your credentials.",
-      "error"
-    );
-  }
-}
-
 async function handleLogout() {
   try {
     const { error } = await db.auth.signOut();
     if (error) throw error;
 
-    showLoginMessage("You have signed out successfully.", "success");
-    showLogin();
+    window.location.replace("../index.html");
   } catch (error) {
     console.error("Logout failed:", error);
     showMessage("Unable to log out. Please try again.", "error");
-  }
-}
-
-async function handleForgotPassword() {
-  const email = $("#email")?.value.trim();
-
-  if (!email) {
-    showLoginMessage("Enter your email address first, then select Forgot Password.", "error");
-    $("#email")?.focus();
-    return;
-  }
-
-  try {
-    const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/admin/reset-password.html`
-    });
-
-    if (error) throw error;
-
-    showLoginMessage(
-      "If this email is registered, a password reset link will be sent.",
-      "success"
-    );
-  } catch (error) {
-    console.error("Password reset request failed:", error);
-    showLoginMessage(error.message || "Unable to request a password reset.", "error");
   }
 }
 
@@ -675,15 +585,18 @@ function subscribeToOrderChanges() {
     .subscribe();
 }
 
-function initializeAdmin() {
+function redirectToSharedLogin(accessReason) {
+  window.location.replace(`../index.html?access=${accessReason}`);
+}
+
+async function initializeAdmin() {
   if (!db) {
-    showLoginMessage("Supabase is not initialized. Check supabase-config.js.", "error");
+    console.error("Supabase is not initialized. Check supabase-config.js.");
+    redirectToSharedLogin("profile-error");
     return;
   }
 
-  $("#loginForm")?.addEventListener("submit", handleLogin);
   $("#logoutBtn")?.addEventListener("click", handleLogout);
-  $("#forgotPasswordBtn")?.addEventListener("click", handleForgotPassword);
   $("#refreshBtn")?.addEventListener("click", loadOrders);
 
   document.querySelectorAll("[data-section]").forEach(button => {
@@ -704,39 +617,41 @@ function initializeAdmin() {
     button.addEventListener("click", loadOrders);
   });
 
-  db.auth.getSession().then(async ({ data, error }) => {
-    if (error) {
-      showLoginMessage("Unable to check your session. Please sign in again.", "error");
-      return;
-    }
-
-    const user = data?.session?.user;
-
-    if (!user) {
-      showLogin();
-      return;
-    }
-
-    try {
-      await verifyAdmin(user);
-      showDashboard(user);
-    } catch (authorizationError) {
-      console.error("Admin session verification failed:", authorizationError);
-      await db.auth.signOut();
-      showLogin();
-
-      showLoginMessage(
-        authorizationError.message || "Your account is not authorized.",
-        "error"
-      );
-    }
-  });
-
   db.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT" || !session?.user) {
-      showLogin();
+      redirectToSharedLogin("login-required");
     }
   });
+
+  try {
+    const { data, error } = await db.auth.getUser();
+
+    if (error) throw error;
+
+    const user = data?.user;
+
+    if (!user) {
+      redirectToSharedLogin("login-required");
+      return;
+    }
+
+    const role = await verifyAdmin(user);
+
+    if (role === "customer") {
+      window.location.replace("../customer/customer.html");
+      return;
+    }
+
+    if (role !== "admin") {
+      redirectToSharedLogin("unsupported-role");
+      return;
+    }
+
+    showDashboard(user);
+  } catch (error) {
+    console.error("Admin session verification failed:", error);
+    redirectToSharedLogin("profile-error");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initializeAdmin);
