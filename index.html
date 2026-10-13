@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#FF6900">
+  <meta name="description" content="Rice Rush Express - Good food, fast delivery.">
+  <title>Rice Rush Express</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- SPLASH SCREEN -->
+  <section class="splash-screen" id="splash-screen">
+    <div class="splash-decoration decoration-one"></div>
+    <div class="splash-decoration decoration-two"></div>
+
+    <div class="splash-content">
+      <div class="brand-icon splash-icon">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <path d="M11 34H53L48 47C47 51 43 54 39 54H25C20 54 16 51 15 47L11 34Z" fill="white"/>
+          <path d="M15 34C15 26 23 20 32 20C41 20 49 26 49 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 16C21 12 26 10 24 6M33 16C30 12 35 10 33 6M42 16C39 12 44 10 42 6" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          <path d="M19 40H45M22 46H42" stroke="#FF6900" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1>Rice Rush <span>Express</span></h1>
+      <p class="splash-tagline">GOOD FOOD. FAST DELIVERY.</p>
+      <div class="loading-indicator"><span></span><span></span><span></span></div>
+    </div>
+    <p class="splash-footer">MADE WITH LOVE, SERVED WITH RICE</p>
+  </section>
+
+  <!-- AUTHENTICATION AREA -->
+  <main class="auth-page">
+    <div class="auth-showcase">
+      <div class="showcase-top">
+        <a class="brand" href="#" aria-label="Rice Rush Express home">
+          <span class="brand-icon small-brand-icon">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+              <path d="M11 34H53L48 47C47 51 43 54 39 54H25C20 54 16 51 15 47L11 34Z" fill="white"/>
+              <path d="M15 34C15 26 23 20 32 20C41 20 49 26 49 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+              <path d="M24 16C21 12 26 10 24 6M33 16C30 12 35 10 33 6M42 16C39 12 44 10 42 6" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Rice Rush <strong>Express</strong></span>
+        </a>
+      </div>
+
+      <div class="showcase-copy">
+        <span class="eyebrow"><span class="eyebrow-dot"></span> YOUR MEAL, YOUR WAY</span>
+        <h2>Good food.<br>Great mood.<br><span>Zero hassle.</span></h2>
+        <p>Your favorite rice meals are just a few clicks away. Fresh flavors, easy ordering, and a little happiness in every bite.</p>
+
+        <div class="showcase-features">
+          <div class="feature-item">
+            <span class="feature-icon">01</span>
+            <div>
+              <strong>Easy ordering</strong>
+              <small>Your favorites, made simple.</small>
+            </div>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">02</span>
+            <div>
+              <strong>Made for cravings</strong>
+              <small>Find your next favorite meal.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-bottom">
+        <span>GOOD FOOD, GOOD DAYS.</span>
+        <span>RICE RUSH EXPRESS © 2026</span>
+      </div>
+    </div>
+
+    <div class="auth-side">
+      <div class="auth-mobile-brand">
+        <span class="brand-icon small-brand-icon">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <path d="M11 34H53L48 47C47 51 43 54 39 54H25C20 54 16 51 15 47L11 34Z" fill="white"/>
+            <path d="M15 34C15 26 23 20 32 20C41 20 49 26 49 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <path d="M24 16C21 12 26 10 24 6M33 16C30 12 35 10 33 6M42 16C39 12 44 10 42 6" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>Rice Rush <strong>Express</strong></span>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <section class="auth-card" id="login-view">
+        <div class="card-heading">
+          <span class="eyebrow">WELCOME BACK</span>
+          <h2>Let's get you <span>fed.</span></h2>
+          <p>Sign in to continue to Rice Rush Express.</p>
+        </div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="username">Email address</label>
+            <input type="email" id="username" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="password">Password</label>
+              <button type="button" class="text-link" id="forgot-password">Forgot password?</button>
+            </div>
+            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" required>
+          </div>
+
+          <button type="submit" class="primary-button">
+            <span>Sign In</span><span class="button-arrow">→</span>
+          </button>
+          <p class="form-message" id="login-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="auth-divider"><span>NEW TO RICE RUSH?</span></div>
+        <button type="button" class="secondary-button" id="open-signup">Create an Account <span>＋</span></button>
+        <p class="legal-note">By continuing, you agree to our Terms of Service and Privacy Policy.</p>
+      </section>
+
+      <!-- REGISTRATION FORM -->
+      <section class="auth-card hidden" id="signup-view">
+        <div class="card-heading">
+          <span class="eyebrow">JOIN THE RUSH</span>
+          <h2>Your next meal starts <span>here.</span></h2>
+          <p>Create your account to get started.</p>
+        </div>
+
+        <form id="signup-form">
+          <div class="form-group">
+            <label for="full-name">Full name</label>
+            <input type="text" id="full-name" placeholder="Enter your full name" autocomplete="name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-email">Email address</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="confirm-password">Confirm password</label>
+            <input type="password" id="confirm-password" placeholder="Re-enter your password" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <button type="submit" class="primary-button">
+            <span>Create Account</span><span class="button-arrow">→</span>
+          </button>
+          <p class="form-message" id="signup-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <p class="switch-auth">Already have an account? <button type="button" class="text-link" id="back-to-login">Sign in</button></p>
+      </section>
+
+      <!-- PASSWORD RECOVERY -->
+      <section class="auth-card hidden" id="forgot-view">
+        <div class="card-heading">
+          <span class="eyebrow">ACCOUNT RECOVERY</span>
+          <h2>Forgot your <span>password?</span></h2>
+          <p>Return to sign in or request a password reset.</p>
+        </div>
+
+        <button type="button" class="primary-button" id="forgot-back">
+          <span>Back to Sign In</span><span class="button-arrow">→</span>
+        </button>
+      </section>
+
+      <p class="mobile-footer">GOOD FOOD, GOOD DAYS. © 2026 RICE RUSH EXPRESS</p>
+    </div>
+  </main>
+
+  <!-- Load Supabase before your configuration and app JavaScript. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff8ef">
+  <title>Admin Dashboard | Rice Rush Express</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="admin.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="admin.html">
+      <span class="brand-icon">🍚</span>
+      <span>Rice Rush <span class="brand-accent">Admin</span></span>
+    </a>
+
+    <div class="topbar-actions">
+      <span id="adminEmail" class="admin-email">Administrator</span>
+      <button id="logoutBtn" class="btn btn-light hidden" type="button">Log Out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="loginPanel" class="login-panel">
+      <div class="login-icon">🍱</div>
+      <p class="eyebrow">RICE RUSH EXPRESS</p>
+      <h1>Admin Login</h1>
+      <p>Sign in to manage orders and monitor your food business.</p>
+
+      <form id="loginForm">
+        <label for="email">Email Address</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="username"
+          placeholder="Enter your admin email"
+          required
+        >
+
+        <label for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Enter your password"
+          required
+        >
+
+        <button type="button" id="forgotPasswordBtn" class="forgot-password-btn">
+          Forgot Password?
+        </button>
+
+        <button class="btn btn-primary full-width" type="submit">
+          Sign In
+        </button>
+
+        <p id="loginMessage" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="dashboard" class="admin-layout hidden">
+      <aside class="sidebar">
+        <div class="sidebar-heading">
+          <span class="sidebar-label">MAIN MENU</span>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Admin navigation">
+          <button class="nav-item active" type="button" data-section="overview">
+            <span class="nav-icon">▦</span>
+            <span>Dashboard</span>
+          </button>
+
+          <button class="nav-item" type="button" data-section="orders">
+            <span class="nav-icon">🛍</span>
+            <span>Orders</span>
+          </button>
+
+          <button class="nav-item" type="button" data-section="menu">
+            <span class="nav-icon">🍱</span>
+            <span>Food Menu</span>
+          </button>
+
+          <button class="nav-item" type="button" data-section="customers">
+            <span class="nav-icon">♙</span>
+            <span>Customers</span>
+          </button>
+
+          <button class="nav-item" type="button" data-section="reports">
+            <span class="nav-icon">▤</span>
+            <span>Reports</span>
+          </button>
+
+          <div class="sidebar-divider"></div>
+
+          <button class="nav-item" type="button" data-section="settings">
+            <span class="nav-icon">⚙</span>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="admin-avatar">A</div>
+          <div class="admin-identity-copy">
+            <strong>Administrator</strong>
+            <span>Rice Rush Express</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="admin-main">
+        <section id="section-overview" class="content-section">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">OVERVIEW</p>
+              <h1>Dashboard</h1>
+              <p>Welcome back! Here's what's happening with your orders.</p>
+            </div>
+
+            <button id="refreshBtn" class="btn btn-light" type="button">
+              ↻ Refresh
+            </button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span>Total Orders</span>
+              <strong id="totalCount">0</strong>
+              <small>All customer orders</small>
+            </article>
+
+            <article class="stat-card">
+              <span>Pending</span>
+              <strong id="pendingCount">0</strong>
+              <small>Awaiting processing</small>
+            </article>
+
+            <article class="stat-card">
+              <span>In Progress</span>
+              <strong id="progressCount">0</strong>
+              <small>Being processed or delivered</small>
+            </article>
+
+            <article class="stat-card">
+              <span>Completed</span>
+              <strong id="completedCount">0</strong>
+              <small>Successfully completed</small>
+            </article>
+          </div>
+
+          <section class="orders-panel">
+            <div class="orders-toolbar">
+              <div>
+                <h2>Recent Orders</h2>
+                <p>View recently placed orders and the food customers selected.</p>
+              </div>
+
+              <button class="btn btn-light" type="button" data-section="orders">
+                View All Orders
+              </button>
+            </div>
+
+            <div id="recentOrdersList" class="orders-list"></div>
+          </section>
+        </section>
+
+        <section id="section-orders" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">ORDER MANAGEMENT</p>
+              <h1>Customer Orders</h1>
+              <p>Review orders, see ordered food, and update order statuses.</p>
+            </div>
+
+            <button class="btn btn-light" type="button" data-refresh-orders>
+              ↻ Refresh Orders
+            </button>
+          </div>
+
+          <section class="orders-panel">
+            <div class="orders-toolbar">
+              <div>
+                <h2>All Orders</h2>
+                <p id="orderSummary">Loading orders...</p>
+              </div>
+
+              <div class="filters">
+                <input
+                  id="searchInput"
+                  type="search"
+                  placeholder="Search customer or order ID"
+                  aria-label="Search orders"
+                >
+
+                <select id="statusFilter" aria-label="Filter by status">
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
+                  <option value="out_for_delivery">Out for Delivery</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="ordersList" class="orders-list"></div>
+          </section>
+        </section>
+
+        <section id="section-menu" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">MENU MANAGEMENT</p>
+              <h1>Food Menu</h1>
+              <p>Manage the meals and food products offered to customers.</p>
+            </div>
+          </div>
+
+          <div class="empty-state">
+            Food menu management has not been connected yet.
+          </div>
+        </section>
+
+        <section id="section-customers" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">CUSTOMER MANAGEMENT</p>
+              <h1>Customers</h1>
+              <p>Customer information and order history.</p>
+            </div>
+          </div>
+
+          <div class="empty-state">
+            Customer management has not been connected yet.
+          </div>
+        </section>
+
+        <section id="section-reports" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">BUSINESS INSIGHTS</p>
+              <h1>Reports</h1>
+              <p>Review your order activity and completed sales.</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span>Total Orders</span>
+              <strong id="reportTotalOrders">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span>Completed Orders</span>
+              <strong id="reportCompletedOrders">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span>Cancelled Orders</span>
+              <strong id="reportCancelledOrders">0</strong>
+            </article>
+
+            <article class="stat-card">
+              <span>Completed Sales</span>
+              <strong id="reportRevenue">₱0.00</strong>
+            </article>
+          </div>
+        </section>
+
+        <section id="section-settings" class="content-section hidden">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">ACCOUNT MANAGEMENT</p>
+              <h1>Settings</h1>
+              <p>View the account currently signed in to the dashboard.</p>
+            </div>
+          </div>
+
+          <section class="orders-panel settings-panel">
+            <h2>Administrator Account</h2>
+
+            <label for="settingsEmail">Email Address</label>
+            <input id="settingsEmail" type="email" readonly>
+
+            <p class="settings-note">
+              Administrator access is verified through your authorized Supabase admin account.
+            </p>
+          </section>
+        </section>
+
+        <p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll("[data-refresh-orders]").forEach(button => {
+      button.addEventListener("click", () => {
+        document.getElementById("refreshBtn")?.click();
+      });
+    });
+  </script>
+</body>
+</html>

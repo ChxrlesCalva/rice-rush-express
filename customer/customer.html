@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Rice Rush Express | Customer</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="customer.css">
+</head>
+
+<body>
+  <header class="navbar">
+    <a href="#home" class="brand">
+     <img src="../images/newlogo.png" alt="Rice Rush Express Logo" class="brand-logo">
+      Rice Rush <span>Express</span>
+    </a>
+
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#menu">Menu</a>
+      <a href="#orders">My Orders</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button id="cartButton" class="cart-button" type="button">
+        🛒 Cart <span id="cartCount">0</span>
+      </button>
+
+      <a href="../index.html" class="sign-out">Sign Out</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div>
+        <p class="eyebrow">YOUR FAVORITE RICE MEALS</p>
+        <h1>Good food.<br><span>Fast delivery.</span></h1>
+
+        <p>
+          Discover delicious rice meals made for your cravings.
+          Choose your favorites and order with ease!
+        </p>
+
+        <a href="#menu" class="primary-button">Order Now →</a>
+      </div>
+
+      <div class="hero-art">
+        <img src="../images/ricerush.png" alt="Rice Rush Express Logo">
+      </div>
+    </section>
+
+    <section class="menu-section" id="menu">
+      <div class="section-heading">
+        <p class="eyebrow">MADE FRESH FOR YOU</p>
+        <h2>Explore Our Menu</h2>
+        <p>Find a meal for your next craving.</p>
+      </div>
+
+      <div class="menu-tools">
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="🔍 Search meals..."
+          aria-label="Search meals"
+        >
+
+        <div id="categoryFilters" class="category-filters">
+            
+  <button type="button" class="filter-button active" data-category="All">All</button>
+  <button type="button" class="filter-button" data-category="Silog">Silog Meals</button>
+  <button type="button" class="filter-button" data-category="Filipino Food">Filipino Food</button>
+  <button type="button" class="filter-button" data-category="Chicken">Chicken Meals</button>
+  <button type="button" class="filter-button" data-category="Pork">Pork Meals</button>
+  <button type="button" class="filter-button" data-category="Snacks & Sides">Snacks &amp; Sides</button>
+  <button type="button" class="filter-button" data-category="Desserts">Desserts</button>
+  <button type="button" class="filter-button" data-category="Drinks">Drinks</button>
+
+  <button
+  type="button"
+  class="filter-button"
+  data-category="Favorites"
+>
+  ⭐Favorites
+</button>
+</div>
+      </div>
+
+      <div class="meal-grid" id="mealGrid">
+        <p class="empty-message">Loading menu...</p>
+      </div>
+    </section>
+
+    <section class="orders-section" id="orders">
+      <p class="eyebrow">YOUR RECENT ACTIVITY</p>
+      <h2>My Orders</h2>
+
+      <div id="ordersList" class="orders-list">
+        <p class="empty-message">You haven't placed an order yet.</p>
+      </div>
+    </section>
+
+    <section class="bottom-banner">
+      <div>
+        <h2>Your next favorite meal is waiting!</h2>
+        <p>Pick your meal and let the cravings begin.</p>
+      </div>
+
+      <a href="#menu" class="light-button">Browse Menu →</a>
+    </section>
+  </main>
+
+  <footer>
+    <strong>🍚 Rice Rush Express</strong>
+    <p>Made with ❤️ for rice meal lovers.</p>
+    <small>© 2026 Rice Rush Express — Student Project</small>
+  </footer>
+
+  <!-- Shopping cart -->
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+  <aside id="cartDrawer" class="cart-drawer" aria-label="Shopping cart">
+    <div class="drawer-header">
+      <div>
+        <p class="eyebrow">YOUR SELECTION</p>
+        <h2>Your Cart 🛒</h2>
+      </div>
+
+      <button
+        id="closeCart"
+        class="close-button"
+        type="button"
+        aria-label="Close cart"
+      >×</button>
+    </div>
+
+    <div id="cartItems" class="cart-items">
+      <p class="empty-message">Your cart is empty.</p>
+    </div>
+
+    <div class="cart-summary">
+      <div class="subtotal-row">
+        <span>Subtotal</span>
+        <strong id="cartSubtotal">₱0.00</strong>
+      </div>
+
+      <p class="demo-note">
+        Student project checkout. No real payment is processed.
+      </p>
+
+      <button
+        id="checkoutButton"
+        class="primary-button full-button"
+        type="button"
+        disabled
+      >
+        Proceed to Checkout →
+      </button>
+    </div>
+  </aside>
+
+  <!-- Checkout modal -->
+  <div id="checkoutBackdrop" class="modal-backdrop">
+    <section
+      class="checkout-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkoutTitle"
+    >
+      <button
+        id="closeCheckout"
+        class="close-button modal-close"
+        type="button"
+        aria-label="Close checkout"
+      >×</button>
+
+      <p class="eyebrow">ALMOST THERE!</p>
+      <h2 id="checkoutTitle">Complete Your Order</h2>
+
+      <p class="modal-description">
+        Choose delivery or pickup and enter your details.
+      </p>
+
+      <form id="checkoutForm">
+        <label for="customerName">Full Name</label>
+        <input
+          id="customerName"
+          name="customerName"
+          type="text"
+          placeholder="Your full name"
+          autocomplete="name"
+          required
+        >
+
+        <label for="customerPhone">Phone Number</label>
+        <input
+          id="customerPhone"
+          name="customerPhone"
+          type="tel"
+          placeholder="Your phone number"
+          autocomplete="tel"
+          required
+        >
+
+        <label for="orderMethod">Order Method</label>
+        <select id="orderMethod" name="orderMethod" required>
+          <option value="delivery">Delivery</option>
+          <option value="pickup">Pickup</option>
+        </select>
+
+        <div id="addressField">
+          <label for="customerAddress">Delivery Address</label>
+          <textarea
+            id="customerAddress"
+            name="customerAddress"
+            placeholder="House number, street, barangay, city"
+            autocomplete="street-address"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+
+        <label for="paymentMethod">Payment Method</label>
+        <select id="paymentMethod" name="paymentMethod" required>
+          <option value="cash">Cash on delivery</option>
+        </select>
+
+        <label for="customerNote">Order Note (optional)</label>
+        <input
+          id="customerNote"
+          name="customerNote"
+          type="text"
+          placeholder="Special instructions"
+        >
+
+        <div class="checkout-total">
+          <span>Total</span>
+          <strong id="checkoutTotal">₱0.00</strong>
+        </div>
+
+        <button type="submit" class="primary-button full-button">
+          Place Order
+        </button>
+      </form>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Load Supabase before your application JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="customer.js"></script>
+</body>
+</html>
