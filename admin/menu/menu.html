@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Management | Rice Rush Express</title>
+
+  <link rel="stylesheet" href="menu.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../supabase-config.js"></script>
+</head>
+<body>
+  <header class="menu-header">
+    <h1>Rice Rush Express</h1>
+    <h2>Menu Management</h2>
+    <a href="../admin.html">Back to Dashboard</a>
+  </header>
+
+  <main class="menu-container">
+    <section class="menu-form-section">
+      <h2>Add Menu Item</h2>
+
+      <form id="menuForm">
+        <label for="name">Food Name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+        >
+
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          name="description"
+        ></textarea>
+
+        <label for="price">Price (₱)</label>
+        <input
+          id="price"
+          name="price"
+          type="number"
+          min="0.01"
+          step="0.01"
+          required
+        >
+
+        <label for="category">Category</label>
+        <input
+          id="category"
+          name="category"
+          type="text"
+          required
+        >
+
+        <label for="image_file">Food Photo</label>
+        <input
+          id="image_file"
+          name="image_file"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+        >
+
+        <img
+          id="imagePreview"
+          alt="Selected food photo preview"
+          hidden
+          style="max-width: 200px; max-height: 200px; margin-top: 10px; object-fit: cover;"
+        >
+
+        <p id="imageUploadMessage" role="status"></p>
+
+        <button type="submit">Add Menu Item</button>
+      </form>
+
+      <p id="menuMessage" role="status"></p>
+    </section>
+
+    <section class="menu-list-section">
+      <h2>Existing Menu Items</h2>
+
+      <div id="menuList" class="menu-list">
+        <p>Loading menu items...</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="menu.js"></script>
+</body>
+</html>
