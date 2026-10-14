@@ -13,7 +13,7 @@ let isAdminSession = false;
 
 function showMenuMessage(message, isError = false) {
   menuMessage.textContent = message;
-  menuMessage.style.color = isError ? "#B71C1C" : "#2E7D32";
+  menuMessage.style.color = isError ? "#FF8A80" : "#79D69A";
 }
 
 function escapeHTML(value) {

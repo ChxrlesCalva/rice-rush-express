@@ -1,13 +1,15 @@
 :root {
   --orange: #f47721;
-  --orange-dark: #d95d10;
-  --cream: #fff8ef;
-  --brown: #38261d;
-  --muted: #81746b;
-  --border: #f0e4d9;
-  --success: #16803d;
-  --success-light: #e4f6e9;
-  --danger: #b64430;
+  --orange-dark: #ff8a3d;
+  --cream: #0b0b0b;
+  --brown: #f5eee8;
+  --muted: #b8aaa0;
+  --border: #39312d;
+  --surface: #191512;
+  --surface-raised: #211c19;
+  --success: #79d69a;
+  --success-light: #183022;
+  --danger: #ff8a80;
   --customer-navbar-height: 128px;
 }
 
@@ -25,7 +27,7 @@ html {
 body {
   font-family: "Nunito", sans-serif;
   color: var(--brown);
-  background: #fffdf9;
+  background: var(--cream);
 }
 
 button,
@@ -56,7 +58,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: white;
+  background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -81,7 +83,7 @@ a {
 }
 
 .navbar nav a {
-  color: #75675e;
+  color: var(--muted);
   font-weight: 800;
 }
 
@@ -102,7 +104,7 @@ a {
 }
 
 .cart-button {
-  background: #fff0e3;
+  background: #382216;
   color: var(--orange-dark);
 }
 
@@ -130,7 +132,7 @@ a {
   justify-content: space-between;
   gap: 40px;
   overflow: hidden;
-  background: linear-gradient(120deg, #fff4e6, #ffead4);
+  background: linear-gradient(120deg, #20150f, #110f0e);
 }
 
 .hero > div:first-child {
@@ -215,7 +217,7 @@ a {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: white;
+  background: var(--surface-raised);
   box-shadow: 0 20px 45px #78461e1f;
   font-size: 7rem;
 }
@@ -226,7 +228,7 @@ a {
   place-items: center;
   width: 58px;
   height: 58px;
-  background: white;
+  background: var(--surface-raised);
   border-radius: 50%;
   box-shadow: 0 10px 30px #43271417;
   font-size: 1.8rem;
@@ -274,7 +276,7 @@ a {
   z-index: 10;
   margin: 0 auto 30px;
   padding: 12px 0;
-  background: rgb(255 253 249 / 30%);
+  background: rgb(11 11 11 / 78%);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   transition: background .18s ease;
@@ -283,7 +285,7 @@ a {
 body.categories-hidden-while-scrolling .menu-tools {
   background: linear-gradient(
     to bottom,
-    rgb(255 253 249 / 30%) 0 72px,
+    rgb(11 11 11 / 78%) 0 72px,
     transparent 72px 100%
   );
 }
@@ -295,7 +297,7 @@ body.categories-hidden-while-scrolling .menu-tools {
   padding: 11px 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
+  background: var(--surface-raised);
   outline: none;
   margin: 0 auto 12px;
 }
@@ -317,7 +319,7 @@ select:focus {
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: white;
+  background: var(--surface);
   margin-inline: auto;
   transition: opacity .18s ease, transform .18s ease, visibility .18s;
 }
@@ -333,7 +335,7 @@ body.categories-hidden-while-scrolling .category-filters {
   border: 1px solid var(--border);
   padding: 8px 10px;
   border-radius: 12px;
-  background: white;
+  background: var(--surface-raised);
   color: var(--muted);
   font-weight: 800;
   font-size: .86rem;
@@ -356,9 +358,9 @@ body.categories-hidden-while-scrolling .category-filters {
 .meal-card {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #f2e9e0;
+  border: 1px solid var(--border);
   border-radius: 18px;
-  background: white;
+  background: var(--surface);
   box-shadow: 0 6px 22px #4327140d;
 }
 
@@ -447,7 +449,7 @@ body.categories-hidden-while-scrolling .category-filters {
 }
 
 .order-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 22px;
@@ -623,7 +625,7 @@ body.categories-hidden-while-scrolling .category-filters {
   margin-top: 16px;
   padding: 14px;
   border-radius: 10px;
-  background: #fff0ed;
+  background: #351b18;
   color: var(--danger);
 }
 
@@ -739,14 +741,14 @@ body.categories-hidden-while-scrolling .category-filters {
 }
 
 .light-button {
-  background: white;
+  background: var(--surface-raised);
   color: var(--orange-dark);
   white-space: nowrap;
 }
 
 footer {
   padding: 35px 20px;
-  background: #38261d;
+  background: #171311;
   color: white;
   text-align: center;
 }
@@ -790,7 +792,7 @@ footer small {
   right: 0;
   width: min(430px, 100%);
   height: 100%;
-  background: white;
+  background: var(--surface);
   padding: 25px;
   display: flex;
   flex-direction: column;
@@ -861,7 +863,7 @@ footer small {
 .quantity-controls button {
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: white;
+  background: var(--surface-raised);
   min-width: 30px;
   min-height: 30px;
   padding: 3px 7px;
@@ -870,7 +872,7 @@ footer small {
 
 .quantity-controls .remove-button {
   color: #b64430;
-  background: #fff0ed;
+  background: #351b18;
 }
 
 .cart-summary {
@@ -916,7 +918,7 @@ footer small {
   width: min(500px, 100%);
   max-height: 92vh;
   overflow-y: auto;
-  background: white;
+  background: var(--surface);
   padding: 30px;
   border-radius: 20px;
 }
@@ -957,7 +959,7 @@ footer small {
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: white;
+  background: var(--surface-raised);
   outline: none;
 }
 
@@ -980,7 +982,7 @@ footer small {
   padding: 13px 20px;
   border-radius: 12px;
   color: white;
-  background: var(--brown);
+  background: #171311;
   box-shadow: 0 12px 35px #43271424;
   text-align: center;
   opacity: 0;
@@ -1161,11 +1163,13 @@ footer small {
 
 .orders-page {
   --orange: #e65100;
-  --orange-dark: #bf360c;
-  --cream: #fff9f2;
-  --brown: #3e2723;
-  --muted: #795548;
-  --border: #efdfd2;
+  --orange-dark: #ff8a3d;
+  --cream: #0b0b0b;
+  --brown: #f5eee8;
+  --muted: #b8aaa0;
+  --border: #39312d;
+  --surface: #191512;
+  --surface-raised: #211c19;
   min-height: 100vh;
   background: var(--cream);
 }
@@ -1378,7 +1382,7 @@ footer small {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 7px 22px #492b140a;
   transition: box-shadow .2s, transform .2s, border-color .2s;
 }
@@ -1394,7 +1398,7 @@ footer small {
   width: 112px;
   height: 112px;
   border-radius: 14px;
-  background: #fff1e4;
+  background: #382216;
   object-fit: cover;
 }
 
@@ -1502,7 +1506,7 @@ footer small {
   padding: 9px 13px;
   border: 1px solid var(--orange);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface-raised);
   color: var(--orange-dark);
   font-weight: 900;
   transition: color .2s, background .2s, transform .2s;
@@ -1543,7 +1547,7 @@ footer small {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--surface-raised);
 }
 
 .orders-page .tracking-items h4 {
@@ -1571,7 +1575,7 @@ footer small {
   padding: 34px 24px;
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface);
   color: var(--muted);
   text-align: center;
 }

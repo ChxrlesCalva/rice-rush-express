@@ -1,13 +1,14 @@
 
 :root {
   --orange: #ff6900;
-  --orange-dark: #f4510b;
-  --orange-light: #fff0e5;
-  --cream: #fffcf8;
-  --brown: #32170f;
-  --muted: #8a786d;
-  --line: #eee3da;
+  --orange-dark: #ff8a3d;
+  --orange-light: #382216;
+  --cream: #0b0b0b;
+  --brown: #f5eee8;
+  --muted: #b8aaa0;
+  --line: #39312d;
   --white: #ffffff;
+  --surface: #191512;
   --green: #33865a;
   --shadow: 0 18px 55px rgba(68, 37, 19, 0.08);
 }
@@ -424,7 +425,7 @@ button:disabled {
   min-height: 51px;
   padding: 14px 16px;
   color: var(--brown);
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   font-size: 13px;
@@ -510,7 +511,7 @@ button:disabled {
   min-height: 52px;
   padding: 0 17px;
   color: var(--brown);
-  background: var(--white);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   font-size: 13px;

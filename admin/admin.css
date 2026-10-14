@@ -1,15 +1,15 @@
 
 :root {
   --primary: #e65100;
-  --primary-dark: #bf360c;
-  --cream: #fff9f2;
-  --surface: #ffffff;
-  --text: #3e2723;
-  --muted: #795548;
-  --border: #efdfd2;
-  --soft-orange: #fff0e3;
-  --green: #26784d;
-  --red: #bd4037;
+  --primary-dark: #ff8a35;
+  --cream: #0b0b0b;
+  --surface: #191512;
+  --text: #f5eee8;
+  --muted: #b8aaa0;
+  --border: #39312d;
+  --soft-orange: #382216;
+  --green: #79d69a;
+  --red: #ff8a80;
   --shadow: 0 8px 28px rgba(91, 54, 24, 0.07);
   font-family: "Nunito", "Segoe UI", Arial, sans-serif;
 }
@@ -222,7 +222,7 @@ a {
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  color: #6f6055;
+  color: var(--muted);
   background: transparent;
   border: 0;
   border-radius: 11px;
@@ -234,7 +234,7 @@ a {
 
 .nav-item:hover {
   color: var(--primary-dark);
-  background: #fff8f0;
+  background: #2a1a11;
 }
 
 .nav-item.active {
@@ -277,7 +277,7 @@ a {
   margin-top: 24px;
   padding: 14px;
   border-radius: 15px;
-  background: linear-gradient(145deg, #fff1e2, #ffdfbd);
+  background: linear-gradient(145deg, #392315, #26170f);
 }
 
 .sidebar-featured img {
@@ -405,8 +405,8 @@ textarea {
   min-width: 0;
   padding: 12px 14px;
   color: var(--text);
-  background: #fffdfb;
-  border: 1px solid #e9dacc;
+  background: #211c19;
+  border: 1px solid var(--border);
   border-radius: 11px;
   transition: border-color .2s ease, box-shadow .2s ease;
 }
@@ -644,7 +644,7 @@ button:disabled {
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px;
-  background: #fffbf6;
+  background: #211c19;
   border-bottom: 1px solid var(--border);
 }
 
@@ -778,7 +778,7 @@ button:disabled {
   justify-content: space-between;
   gap: 22px;
   padding: 18px 22px;
-  background: #fffbf6;
+  background: #211c19;
   border-top: 1px solid var(--border);
 }
 
@@ -874,8 +874,8 @@ button:disabled {
 .empty-state {
   padding: 40px 16px;
   color: var(--muted);
-  background: #fffbf6;
-  border: 1px dashed #e9d7c5;
+  background: #211c19;
+  border: 1px dashed var(--border);
   border-radius: 14px;
   text-align: center;
 }
@@ -888,7 +888,7 @@ button:disabled {
 
 .report-card {
   padding: 23px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
@@ -940,7 +940,7 @@ button:disabled {
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   text-align: left;
 }
 
@@ -953,7 +953,7 @@ button:disabled {
 
 .admin-table th {
   color: var(--muted);
-  background: #fffbf6;
+  background: #211c19;
   font-size: 11px;
   font-weight: 700;
 }
@@ -967,7 +967,7 @@ button:disabled {
 }
 
 .admin-table tbody tr:hover {
-  background: #fffdfb;
+  background: #28211d;
 }
 
 @media (max-width: 1100px) {
