@@ -216,6 +216,9 @@ async function initializeMenuPage() {
       return;
     }
 
+    document.getElementById("menuAdminEmail").textContent =
+      authData.user.email || "Administrator";
+
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
       .select("role")

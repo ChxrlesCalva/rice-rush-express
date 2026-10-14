@@ -12,14 +12,50 @@
 </head>
 <body>
   <header class="menu-header">
-    <h1>Rice Rush Express</h1>
-    <h2>Menu Management</h2>
-    <a href="../admin.html">Back to Dashboard</a>
+    <a class="menu-brand" href="../admin.html" aria-label="Rice Rush Express dashboard">
+      <img src="../../images/newlogo.png" alt="">
+      <span>Rice Rush <strong>Express</strong></span>
+    </a>
+    <h1 class="menu-page-title">Menu Item List</h1>
+    <div class="menu-header-actions">
+      <span class="menu-account">
+        <span class="menu-account-icon" aria-hidden="true">A</span>
+        <span id="menuAdminEmail">Administrator</span>
+      </span>
+      <a class="dashboard-link" href="../admin.html">Dashboard</a>
+    </div>
   </header>
 
-  <main class="menu-container">
-    <section class="menu-form-section">
-      <h2>Add Menu Item</h2>
+  <main class="menu-workspace">
+    <aside class="restaurant-panel" aria-label="Rice Rush Express">
+      <img src="../../images/ricerush.png" alt="Rice Rush Express delivery rider">
+      <div class="restaurant-panel-copy">
+        <p class="restaurant-eyebrow">RICE RUSH EXPRESS</p>
+        <h2>Good food, on the way.</h2>
+        <p>Manage the dishes that bring everyone to the table.</p>
+      </div>
+    </aside>
+
+    <section class="menu-list-section" aria-labelledby="menuListHeading">
+      <div class="section-heading">
+        <div>
+          <p class="section-eyebrow">YOUR RESTAURANT</p>
+          <h2 id="menuListHeading">Menu Item List</h2>
+        </div>
+      </div>
+
+      <div id="menuList" class="menu-list">
+        <p>Loading menu items...</p>
+      </div>
+    </section>
+
+    <section class="menu-form-section" aria-labelledby="menuFormHeading">
+      <div class="section-heading">
+        <div>
+          <p class="section-eyebrow">MENU EDITOR</p>
+          <h2 id="menuFormHeading">Add Menu Item</h2>
+        </div>
+      </div>
 
       <form id="menuForm">
         <label for="name">Food Name</label>
@@ -66,7 +102,6 @@
           id="imagePreview"
           alt="Selected food photo preview"
           hidden
-          style="max-width: 200px; max-height: 200px; margin-top: 10px; object-fit: cover;"
         >
 
         <p id="imageUploadMessage" role="status"></p>
@@ -75,14 +110,6 @@
       </form>
 
       <p id="menuMessage" role="status"></p>
-    </section>
-
-    <section class="menu-list-section">
-      <h2>Existing Menu Items</h2>
-
-      <div id="menuList" class="menu-list">
-        <p>Loading menu items...</p>
-      </div>
     </section>
   </main>
 
