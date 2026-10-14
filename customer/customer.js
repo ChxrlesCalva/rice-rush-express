@@ -39,6 +39,7 @@ let expandedOrderIds = new Set();
 let highlightedOrderId = new URLSearchParams(window.location.search).get("order");
 let submittingOrder = false;
 let navigationIdleTimer;
+let categoryIdleTimer;
 
 const mobileNavigationQuery = window.matchMedia("(max-width: 760px)");
 
@@ -61,6 +62,18 @@ window.addEventListener("scroll", updateMobileNavigationVisibility, {
 });
 
 mobileNavigationQuery.addEventListener("change", updateMobileNavigationVisibility);
+
+function updateCategoryVisibility() {
+  document.body.classList.add("categories-hidden-while-scrolling");
+  clearTimeout(categoryIdleTimer);
+  categoryIdleTimer = setTimeout(() => {
+    document.body.classList.remove("categories-hidden-while-scrolling");
+  }, 500);
+}
+
+window.addEventListener("scroll", updateCategoryVisibility, {
+  passive: true
+});
 
 const FAVORITES_STORAGE_KEY = "riceRushFavorites";
 const MEAL_IMAGE_FALLBACK =
@@ -211,7 +224,6 @@ function renderMeals() {
           loading="lazy"
         >
         <div class="meal-info">
-          <span class="meal-category">${escapeHTML(meal.category)}</span>
           <h3>${escapeHTML(meal.name)}</h3>
           <p class="meal-description">${escapeHTML(meal.description)}</p>
           <div class="meal-bottom">

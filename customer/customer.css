@@ -8,6 +8,7 @@
   --success: #16803d;
   --success-light: #e4f6e9;
   --danger: #b64430;
+  --customer-navbar-height: 128px;
 }
 
 * {
@@ -268,19 +269,35 @@ a {
 }
 
 .menu-tools {
-  max-width: 1100px;
+  position: sticky;
+  top: var(--customer-navbar-height);
+  z-index: 10;
   margin: 0 auto 30px;
+  padding: 12px 0;
+  background: rgb(255 253 249 / 30%);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  transition: background .18s ease;
+}
+
+body.categories-hidden-while-scrolling .menu-tools {
+  background: linear-gradient(
+    to bottom,
+    rgb(255 253 249 / 30%) 0 72px,
+    transparent 72px 100%
+  );
 }
 
 #searchInput {
   display: block;
   width: 100%;
-  padding: 15px 18px;
+  max-width: 760px;
+  padding: 11px 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: white;
   outline: none;
-  margin-bottom: 18px;
+  margin: 0 auto 12px;
 }
 
 #searchInput:focus,
@@ -293,18 +310,34 @@ select:focus {
 
 .category-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  max-width: 1100px;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: white;
+  margin-inline: auto;
+  transition: opacity .18s ease, transform .18s ease, visibility .18s;
+}
+
+body.categories-hidden-while-scrolling .category-filters {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px);
 }
 
 .filter-button {
   border: 1px solid var(--border);
-  padding: 9px 18px;
-  border-radius: 30px;
+  padding: 8px 10px;
+  border-radius: 12px;
   background: white;
   color: var(--muted);
   font-weight: 800;
+  font-size: .86rem;
+  white-space: nowrap;
 }
 
 .filter-button.active,
@@ -338,27 +371,19 @@ select:focus {
 }
 
 .meal-info {
-  padding: 16px;
-}
-
-.meal-category {
-  color: var(--orange-dark);
-  font-size: .72rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  padding: 12px;
 }
 
 .meal-info h3 {
   font-size: 1.08rem;
-  margin: 7px 0;
+  margin: 0 0 4px;
 }
 
 .meal-description {
   min-height: 42px;
   color: var(--muted);
   font-size: .87rem;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 .meal-bottom {
@@ -367,7 +392,7 @@ select:focus {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .meal-price {
@@ -1812,6 +1837,28 @@ footer small {
 @media (max-width: 760px) {
   body {
     padding-bottom: 58px;
+  }
+
+  :root {
+    --customer-navbar-height: 90px;
+  }
+
+  .category-filters {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .filter-button {
+    min-height: 40px;
+    padding: 6px 3px;
+    font-size: .74rem;
+    line-height: 1.15;
+    white-space: normal;
+  }
+
+  .filter-button[data-category="Favorites"] {
+    font-size: .68rem;
   }
 
   body::after {
