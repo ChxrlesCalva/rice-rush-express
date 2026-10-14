@@ -455,6 +455,17 @@ function initializeOrdersBanner() {
   applyImageFallback(bannerImage);
 }
 
+function initializeHeroImage() {
+  const heroImage = document.querySelector(".hero-art img");
+  if (!heroImage) return;
+
+  heroImage.addEventListener("error", () => {
+    heroImage.hidden = true;
+    heroImage.parentElement?.classList.add("image-unavailable");
+    console.error("Could not load the customer hero image:", heroImage.src);
+  }, { once: true });
+}
+
 function setMyOrdersCount(count) {
   myOrdersLinks.forEach(link => {
     const badge = link.querySelector("[data-my-orders-count]");
@@ -1136,6 +1147,7 @@ document.addEventListener("keydown", event => {
 
 updateAddressRequirement();
 renderCart();
+initializeHeroImage();
 initializeOrdersBanner();
 loadMeals();
 loadCustomerOrders();
