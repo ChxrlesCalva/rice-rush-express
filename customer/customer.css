@@ -95,6 +95,26 @@ a {
   color: var(--orange-dark);
 }
 
+.my-orders-count {
+  display: inline-grid;
+  min-width: 21px;
+  height: 21px;
+  margin-left: 5px;
+  padding: 0 5px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--orange);
+  font-size: .72rem;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.my-orders-count[hidden] {
+  display: none;
+}
+
 .cart-button,
 .sign-out {
   border: 0;
@@ -397,8 +417,21 @@ body.categories-hidden-while-scrolling .category-filters {
   margin-top: 10px;
 }
 
+.meal-pricing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .meal-price {
   font-size: 1.12rem;
+  font-weight: 900;
+}
+
+.meal-availability {
+  color: #ff6b6b;
+  font-size: .8rem;
   font-weight: 900;
 }
 
@@ -425,6 +458,17 @@ body.categories-hidden-while-scrolling .category-filters {
 
 .add-button:active {
   transform: scale(.97);
+}
+
+.add-button:disabled,
+.add-button.is-unavailable {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.add-button:disabled:hover,
+.add-button.is-unavailable:hover {
+  background: var(--orange);
 }
 
 .orders-section {
@@ -1226,8 +1270,7 @@ footer small {
 
 .orders-page .sign-out svg,
 .order-history-date svg,
-.order-history-items svg,
-.order-details-button svg {
+.order-history-items svg {
   width: 19px;
   height: 19px;
   flex: 0 0 auto;
@@ -1374,10 +1417,6 @@ footer small {
 }
 
 .order-history-card {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
   min-width: 0;
   padding: 18px;
   border: 1px solid var(--border);
@@ -1387,10 +1426,32 @@ footer small {
   transition: box-shadow .2s, transform .2s, border-color .2s;
 }
 
-.order-history-card:hover {
+.order-history-summary {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.order-history-card:hover,
+.order-history-card:focus-within {
   transform: translateY(-2px);
   border-color: #f1c5a6;
   box-shadow: 0 12px 28px #492b1414;
+}
+
+.order-history-summary:focus-visible {
+  outline: 3px solid #f7a34c;
+  outline-offset: 5px;
 }
 
 .order-history-image {
@@ -1458,9 +1519,27 @@ footer small {
 .order-history-actions {
   display: flex;
   min-width: 130px;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.order-expand-indicator {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--orange-dark);
+  background: var(--surface-raised);
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform .2s ease;
+}
+
+.order-history-summary[aria-expanded="true"] .order-expand-indicator {
+  transform: rotate(180deg);
 }
 
 .orders-page .order-status {
@@ -1496,7 +1575,6 @@ footer small {
   color: #a12f22;
 }
 
-.order-details-button,
 .orders-retry-button {
   display: inline-flex;
   min-height: 40px;
@@ -1512,30 +1590,23 @@ footer small {
   transition: color .2s, background .2s, transform .2s;
 }
 
-.order-details-button:hover,
 .orders-retry-button:hover {
   transform: translateY(-1px);
   background: var(--orange);
   color: #fff;
 }
 
-.order-details-button:focus-visible,
 .orders-retry-button:focus-visible,
 .orders-browse-link:focus-visible {
   outline: 3px solid #f7a34c;
   outline-offset: 3px;
 }
 
-.order-details-button svg {
-  width: 17px;
-  height: 17px;
-}
-
 .order-history-card .order-tracking-details {
-  grid-column: 1 / -1;
   width: 100%;
-  margin-top: 0;
+  margin-top: 18px;
   padding-top: 18px;
+  border-top: 1px solid var(--border);
 }
 
 .order-history-card .order-tracking-details[hidden] {
@@ -1633,9 +1704,12 @@ footer small {
   }
 
   .order-history-card {
+    padding: 15px;
+  }
+
+  .order-history-summary {
     grid-template-columns: 88px minmax(0, 1fr) auto;
     gap: 13px;
-    padding: 15px;
   }
 
   .order-history-image {
@@ -1761,10 +1835,13 @@ footer small {
   }
 
   .order-history-card {
+    padding: 14px;
+  }
+
+  .order-history-summary {
     grid-template-columns: 76px minmax(0, 1fr);
     align-items: start;
     gap: 12px;
-    padding: 14px;
   }
 
   .order-history-image {
@@ -1787,16 +1864,9 @@ footer small {
 
   .order-history-actions {
     grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: center;
     justify-content: space-between;
     min-width: 0;
-    padding-top: 11px;
-    border-top: 1px solid var(--border);
-  }
-
-  .order-details-button {
-    min-height: 42px;
+    padding-top: 4px;
   }
 
   .orders-page .tracking-items {

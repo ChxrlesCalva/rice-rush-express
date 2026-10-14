@@ -28,6 +28,7 @@ const orderMethod = $("#orderMethod");
 const addressField = $("#addressField");
 const customerAddress = $("#customerAddress");
 const ordersList = $("#ordersList");
+const myOrdersLinks = document.querySelectorAll("[data-my-orders-link]");
 const toast = $("#toast");
 
 let selectedCategory = "All";
@@ -146,7 +147,6 @@ async function loadMeals() {
     const { data, error } = await supabaseClient
       .from("menu_items")
       .select("id, name, description, price, category, image_url, is_available")
-      .eq("is_available", true)
       .order("id");
 
     if (error) throw error;
@@ -158,6 +158,7 @@ async function loadMeals() {
       description: item.description || "",
       category: item.category || "",
       price: Number(item.price) || 0,
+      is_available: item.is_available === true,
       image: item.image_url ||
         "https://placehold.co/700x450/fff0e3/8a4a24?text=Rice+Rush+Meal"
     }));
@@ -227,7 +228,10 @@ function renderMeals() {
           <h3>${escapeHTML(meal.name)}</h3>
           <p class="meal-description">${escapeHTML(meal.description)}</p>
           <div class="meal-bottom">
-            <span class="meal-price">${peso(meal.price)}</span>
+            <div class="meal-pricing">
+              <span class="meal-price">${peso(meal.price)}</span>
+              ${meal.is_available ? "" : '<span class="meal-availability">Unavailable</span>'}
+            </div>
             <div class="meal-actions">
               <button
                 type="button"
@@ -239,9 +243,10 @@ function renderMeals() {
               >${isFavorite ? "★" : "☆"}</button>
               <button
                 type="button"
-                class="add-button"
+                class="add-button ${meal.is_available ? "" : "is-unavailable"}"
                 data-add="${meal.id}"
-                aria-label="Add ${escapeHTML(meal.name)} to cart"
+                aria-label="${meal.is_available ? `Add ${escapeHTML(meal.name)} to cart` : `${escapeHTML(meal.name)} is unavailable`}"
+                ${meal.is_available ? "" : "disabled"}
               >＋ Add to Cart</button>
             </div>
           </div>
@@ -277,8 +282,9 @@ function toggleFavorite(mealId) {
 
 function addToCart(mealId) {
   const id = Number(mealId);
+  const meal = meals.find(item => item.id === id);
 
-  if (!meals.some(meal => meal.id === id)) return;
+  if (!meal || !meal.is_available) return;
 
   cart[id] = (cart[id] || 0) + 1;
 
@@ -449,6 +455,57 @@ function initializeOrdersBanner() {
   applyImageFallback(bannerImage);
 }
 
+function setMyOrdersCount(count) {
+  myOrdersLinks.forEach(link => {
+    const badge = link.querySelector("[data-my-orders-count]");
+    if (!badge) return;
+
+    if (!Number.isInteger(count) || count < 0) {
+      badge.hidden = true;
+      link.setAttribute("aria-label", "My Orders");
+      return;
+    }
+
+    badge.textContent = String(count);
+    badge.hidden = false;
+    link.setAttribute(
+      "aria-label",
+      `My Orders, ${count} ${count === 1 ? "order" : "orders"}`
+    );
+  });
+}
+
+async function loadMyOrdersCount() {
+  if (!myOrdersLinks.length) return;
+
+  try {
+    const {
+      data: { user },
+      error: authError
+    } = await supabaseClient.auth.getUser();
+
+    if (authError) throw authError;
+
+    if (!user) {
+      setMyOrdersCount(null);
+      return;
+    }
+
+    const { count, error } = await supabaseClient
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", user.id);
+
+    if (error) throw error;
+    if (count === null) throw new Error("Supabase did not return the order count.");
+
+    setMyOrdersCount(count);
+  } catch (error) {
+    console.error("Could not load customer order count:", error);
+    setMyOrdersCount(null);
+  }
+}
+
 function getProgressIndex(status) {
   const progress = {
     pending: 0,
@@ -555,15 +612,6 @@ function renderUtensilsIcon() {
   `;
 }
 
-function renderEyeIcon() {
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z"></path>
-      <circle cx="12" cy="12" r="2.5"></circle>
-    </svg>
-  `;
-}
-
 function renderOrders() {
   if (!ordersList) return;
 
@@ -602,44 +650,43 @@ function renderOrders() {
 
     return `
       <article class="order-history-card">
-        <img
-          class="order-history-image"
-          src="${escapeHTML(firstItemImage)}"
-          alt="${escapeHTML(firstItemName)}"
-          loading="lazy"
+        <button
+          type="button"
+          class="order-history-summary"
+          data-order-toggle="${escapeHTML(orderId)}"
+          aria-expanded="${expanded}"
+          aria-controls="order-details-${escapeHTML(orderId)}"
         >
-
-        <div class="order-history-info">
-          <h3>Order #${escapeHTML(orderId)}</h3>
-          <p class="order-history-date">
-            ${renderCalendarIcon()}
-            <span>${escapeHTML(date)}</span>
-          </p>
-          <p class="order-history-items">
-            ${renderUtensilsIcon()}
-            <span>${itemSummary}</span>
-          </p>
-          <p class="order-history-total">
-            <span>Total</span>
-            <strong>${peso(total)}</strong>
-          </p>
-        </div>
-
-        <div class="order-history-actions">
-          <span class="order-status status-${getStatusClass(status)}">
-            ${escapeHTML(getStatusLabel(status))}
-          </span>
-          <button
-            type="button"
-            class="order-details-button"
-            data-order-toggle="${escapeHTML(orderId)}"
-            aria-expanded="${expanded}"
-            aria-controls="order-details-${escapeHTML(orderId)}"
+          <img
+            class="order-history-image"
+            src="${escapeHTML(firstItemImage)}"
+            alt="${escapeHTML(firstItemName)}"
+            loading="lazy"
           >
-            ${renderEyeIcon()}
-            <span>${expanded ? "Hide Details" : "View Details"}</span>
-          </button>
-        </div>
+
+          <div class="order-history-info">
+            <h3>Order #${escapeHTML(orderId)}</h3>
+            <p class="order-history-date">
+              ${renderCalendarIcon()}
+              <span>${escapeHTML(date)}</span>
+            </p>
+            <p class="order-history-items">
+              ${renderUtensilsIcon()}
+              <span>${itemSummary}</span>
+            </p>
+            <p class="order-history-total">
+              <span>Total</span>
+              <strong>${peso(total)}</strong>
+            </p>
+          </div>
+
+          <div class="order-history-actions">
+            <span class="order-status status-${getStatusClass(status)}">
+              ${escapeHTML(getStatusLabel(status))}
+            </span>
+            <span class="order-expand-indicator" aria-hidden="true">⌄</span>
+          </div>
+        </button>
 
         <div
           id="order-details-${escapeHTML(orderId)}"
@@ -728,6 +775,7 @@ async function loadCustomerOrders() {
     if (!user) {
       customerOrders = [];
       expandedOrderIds.clear();
+      setMyOrdersCount(null);
       ordersList.innerHTML =
         '<div class="orders-empty-state"><h3>Please sign in to view your orders</h3><a href="../index.html" class="orders-browse-link">Go to sign in</a></div>';
       ordersList.setAttribute("aria-busy", "false");
@@ -790,6 +838,7 @@ async function loadCustomerOrders() {
     }
 
     customerOrders = data || [];
+    setMyOrdersCount(customerOrders.length);
     renderOrders();
     ordersList.setAttribute("aria-busy", "false");
   } catch (error) {
@@ -802,7 +851,7 @@ async function loadCustomerOrders() {
 }
 
 async function subscribeToOrderUpdates() {
-  if (!ordersList) return;
+  if (!ordersList && !myOrdersLinks.length) return;
 
   try {
     const {
@@ -810,7 +859,11 @@ async function subscribeToOrderUpdates() {
       error
     } = await supabaseClient.auth.getUser();
 
-    if (error || !user) return;
+    if (error) throw error;
+    if (!user) {
+      setMyOrdersCount(null);
+      return;
+    }
 
     if (ordersChannel) {
       await supabaseClient.removeChannel(ordersChannel);
@@ -827,7 +880,11 @@ async function subscribeToOrderUpdates() {
           filter: `customer_id=eq.${user.id}`
         },
         () => {
-          loadCustomerOrders();
+          if (ordersList) {
+            loadCustomerOrders();
+          } else {
+            loadMyOrdersCount();
+          }
         }
       )
       .subscribe();
@@ -1036,12 +1093,13 @@ if (ordersList) {
       return;
     }
 
-    const button = event.target.closest("[data-order-toggle]");
-    if (!button) return;
+    const summary = event.target.closest("[data-order-toggle]");
+    if (!summary) return;
 
-    const orderId = String(button.dataset.orderToggle);
-    const card = button.closest(".order-history-card");
-    const details = card?.querySelector(".order-tracking-details");
+    const orderId = String(summary.dataset.orderToggle);
+    const details = summary
+      .closest(".order-history-card")
+      ?.querySelector(".order-tracking-details");
 
     if (!details) return;
 
@@ -1053,9 +1111,7 @@ if (ordersList) {
       expandedOrderIds.delete(orderId);
     }
 
-    button.setAttribute("aria-expanded", String(!details.hidden));
-    button.querySelector("span").textContent =
-      details.hidden ? "View Details" : "Hide Details";
+    summary.setAttribute("aria-expanded", String(!details.hidden));
   });
 }
 
@@ -1083,6 +1139,7 @@ renderCart();
 initializeOrdersBanner();
 loadMeals();
 loadCustomerOrders();
+if (!ordersList) loadMyOrdersCount();
 subscribeToOrderUpdates();
 
 window.addEventListener("pagehide", () => {

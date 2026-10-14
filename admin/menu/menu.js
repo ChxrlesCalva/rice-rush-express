@@ -166,7 +166,12 @@ async function loadMenuItems() {
             <p>${escapeHTML(item.description || "No description")}</p>
             <p>${escapeHTML(item.category)}</p>
             <p class="menu-item-price">${formatPrice(item.price)}</p>
-            <p>${item.is_available ? "Available" : "Unavailable"}</p>
+            <button
+              type="button"
+              class="menu-availability-toggle ${item.is_available ? "is-available" : "is-unavailable"}"
+              data-availability-id="${escapeHTML(item.id)}"
+              aria-pressed="${item.is_available}"
+            >${item.is_available ? "Available" : "Unavailable"}</button>
             <button
               type="button"
               class="edit-menu-button"
@@ -269,6 +274,39 @@ function startEditing(item) {
 
 menuList.addEventListener("click", async (event) => {
   if (!isAdminSession) return;
+
+  const availabilityButton = event.target.closest("[data-availability-id]");
+
+  if (availabilityButton) {
+    const nextAvailability = availabilityButton.getAttribute("aria-pressed") !== "true";
+    availabilityButton.disabled = true;
+
+    try {
+      const { data, error } = await supabaseClient
+        .from("menu_items")
+        .update({ is_available: nextAvailability })
+        .eq("id", availabilityButton.dataset.availabilityId)
+        .select("id, is_available")
+        .single();
+
+      if (error) throw error;
+
+      availabilityButton.textContent = data.is_available ? "Available" : "Unavailable";
+      availabilityButton.setAttribute("aria-pressed", String(data.is_available));
+      availabilityButton.classList.toggle("is-available", data.is_available);
+      availabilityButton.classList.toggle("is-unavailable", !data.is_available);
+      showMenuMessage(
+        `${data.is_available ? "Available" : "Unavailable"} status saved.`
+      );
+    } catch (error) {
+      console.error("Menu availability update error:", error);
+      showMenuMessage(error.message || "Could not update menu availability.", true);
+    } finally {
+      availabilityButton.disabled = false;
+    }
+
+    return;
+  }
 
   const button = event.target.closest("[data-edit-id]");
 
