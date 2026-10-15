@@ -44,11 +44,14 @@ const statusLabels = {
 const fallbackImage = dashboardImages.fallback;
 
 let allOrders = [];
+let orderRiders = [];
+let orderRidersLoadError = null;
 let currentUser = null;
 let orderChannel = null;
 let isLoadingOrders = false;
 let hasLoadedOrders = false;
 const savingOrderIds = new Set();
+const savingOrderRiderIds = new Set();
 const pendingOrderStatuses = new Map();
 const expandedOrderItems = new Set();
 
@@ -248,6 +251,13 @@ function createOrderCard(order) {
   const selectedStatus = pendingOrderStatuses.get(orderKey) ||
     (statuses.includes(status) ? status : "");
   const isSaving = savingOrderIds.has(orderKey);
+  const assignedRider = orderRiders.find(rider => String(rider.id) === String(order.rider_id));
+  const isActiveDelivery = order.order_type === "delivery" &&
+    ["confirmed", "preparing", "ready", "out_for_delivery"].includes(status);
+  const availableRiders = orderRiders.filter(rider =>
+    (isActiveDelivery && rider.status === "Available") || String(rider.id) === String(order.rider_id)
+  );
+  const isSavingAssignment = savingOrderRiderIds.has(orderKey);
 
   return `
     <article class="order-card" data-order-id="${orderId}">
@@ -267,6 +277,35 @@ function createOrderCard(order) {
         <p><strong>Address:</strong> ${escapeHTML(order.delivery_address || "No address provided")}</p>
         ${order.order_note ? `<p><strong>Note:</strong> ${escapeHTML(order.order_note)}</p>` : ""}
       </div>
+
+      ${order.order_type === "delivery" ? `
+        <div class="order-rider-section">
+          <div class="order-rider-copy">
+            <strong>Delivery Rider</strong>
+            ${assignedRider
+              ? `<span>${escapeHTML(assignedRider.full_name)} · ${escapeHTML(assignedRider.phone || "Phone unavailable")}${assignedRider.email ? ` · ${escapeHTML(assignedRider.email)}` : ""}</span>`
+              : `<span class="order-rider-unassigned">${order.rider_id ? "Assigned rider details unavailable" : "No rider assigned"}</span>`}
+          </div>
+          <label class="order-rider-control">
+            <span>${order.rider_id ? "Change or remove rider" : "Assign rider"}</span>
+            <select
+              class="order-rider-select"
+              data-order-rider-id="${orderId}"
+              aria-label="Assign rider to order ${orderId}"
+              ${(!isActiveDelivery && !order.rider_id) || isSavingAssignment || Boolean(orderRidersLoadError) ? "disabled" : ""}
+            >
+              <option value="">${order.rider_id ? "Remove assignment" : "Unassigned"}</option>
+              ${availableRiders.map(rider => `
+                <option value="${escapeHTML(String(rider.id))}" ${String(rider.id) === String(order.rider_id) ? "selected" : ""}>
+                  ${escapeHTML(rider.full_name)} — ${escapeHTML(rider.phone)}
+                </option>
+              `).join("")}
+            </select>
+            ${orderRidersLoadError ? `<small class="order-rider-error">Riders could not be loaded.</small>` : ""}
+            ${!isActiveDelivery && !order.rider_id ? `<small>Assignment is available after the order is confirmed.</small>` : ""}
+          </label>
+        </div>
+      ` : ""}
 
       <div class="order-items-section">
         <h4>Ordered Food</h4>
@@ -542,6 +581,24 @@ function renderTrendingDishes(orders, menuItems, menuError = null) {
   `).join("");
 }
 
+async function loadOrderRiders() {
+  const { data, error } = await db
+    .from("riders")
+    .select("id, full_name, phone, email, status")
+    .order("full_name", { ascending: true });
+
+  if (error) {
+    orderRidersLoadError = error;
+    orderRiders = [];
+    console.error("Could not load riders for order management:", error);
+    return false;
+  }
+
+  orderRidersLoadError = null;
+  orderRiders = data || [];
+  return true;
+}
+
 function initializeDashboardImages() {
   document.querySelectorAll("[data-dashboard-image]").forEach(image => {
     const imageName = image.dataset.dashboardImage;
@@ -554,6 +611,351 @@ function initializeDashboardImages() {
 
     image.src = imagePath;
   });
+}
+
+const customerFilterState = {
+  search: "",
+  status: "all",
+  sort: "name",
+  selectedCustomerId: null,
+  records: []
+};
+
+function getCustomerStatusLabel(customer) {
+  const lastOrderDate = customer.lastOrder ? new Date(customer.lastOrder) : null;
+  if (!lastOrderDate || Number.isNaN(lastOrderDate.getTime())) {
+    return "Inactive";
+  }
+
+  const diffDays = (Date.now() - lastOrderDate.getTime()) / 86400000;
+  return diffDays <= 30 ? "Active" : "Inactive";
+}
+
+function formatCustomerStatusBadge(status) {
+  const normalized = status === "Active" ? "active" : "inactive";
+
+  return `<span class="customer-status-badge customer-status-${normalized}">${escapeHTML(status)}</span>`;
+}
+
+function getCustomerDisplayName(customer) {
+  return customer.name || "Guest Customer";
+}
+
+function getCustomerTableRows(customers) {
+  const query = customerFilterState.search.trim().toLowerCase();
+  const statusFilter = customerFilterState.status;
+
+  const filtered = customers.filter(customer => {
+    const searchableText = [
+      customer.name,
+      customer.email,
+      customer.phone,
+      customer.lastOrder
+    ].join(" ").toLowerCase();
+
+    const matchesSearch = !query || searchableText.includes(query);
+    const matchesStatus = statusFilter === "all"
+      || getCustomerStatusLabel(customer).toLowerCase() === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const sorted = [...filtered].sort((left, right) => {
+    switch (customerFilterState.sort) {
+      case "orders":
+        return (right.orderCount || 0) - (left.orderCount || 0);
+      case "lastOrder": {
+        const leftDate = left.lastOrder ? new Date(left.lastOrder).getTime() : 0;
+        const rightDate = right.lastOrder ? new Date(right.lastOrder).getTime() : 0;
+        return rightDate - leftDate;
+      }
+      case "totalSpent":
+        return (right.totalSpent || 0) - (left.totalSpent || 0);
+      case "name":
+      default:
+        return (left.name || "").localeCompare(right.name || "");
+    }
+  });
+
+  return sorted;
+}
+
+function renderCustomerDetailPane(selectedCustomer) {
+  const details = document.getElementById("customerDetails");
+  if (!details) return;
+
+  if (!selectedCustomer) {
+    details.innerHTML = '<div class="empty-state">Select a customer to view their details.</div>';
+    return;
+  }
+
+  const status = getCustomerStatusLabel(selectedCustomer);
+  const orderCount = selectedCustomer.orderCount || 0;
+  const lastOrder = selectedCustomer.lastOrder ? formatDate(selectedCustomer.lastOrder) : "No completed order yet";
+
+  const recentOrders = selectedCustomer.orders.slice(0, 5).map(order => `
+    <li class="customer-order-list-item">
+      <div>
+        <strong>#${escapeHTML(String(order.id))}</strong>
+        <span>${escapeHTML(formatDate(order.created_at))}</span>
+      </div>
+      <div class="customer-order-meta">
+        <span>${escapeHTML(getStatusText(order.status || "pending"))}</span>
+        <strong>${peso(order.total || 0)}</strong>
+      </div>
+    </li>
+  `).join("");
+
+  details.innerHTML = `
+    <div class="customer-detail-header">
+      <div class="customer-detail-avatar" aria-hidden="true">${escapeHTML((getCustomerDisplayName(selectedCustomer).trim().charAt(0) || "C").toUpperCase())}</div>
+      <div>
+        <h3>${escapeHTML(getCustomerDisplayName(selectedCustomer))}</h3>
+        <p>${escapeHTML(selectedCustomer.email || "No email on file")}</p>
+      </div>
+      ${formatCustomerStatusBadge(status)}
+    </div>
+
+    <dl class="customer-detail-list">
+      <div>
+        <dt>Phone</dt>
+        <dd>${escapeHTML(selectedCustomer.phone || "Not provided")}</dd>
+      </div>
+      <div>
+        <dt>Member since</dt>
+        <dd>${escapeHTML(selectedCustomer.createdAt ? formatDate(selectedCustomer.createdAt) : "Unavailable")}</dd>
+      </div>
+      <div>
+        <dt>Total orders</dt>
+        <dd>${orderCount}</dd>
+      </div>
+      <div>
+        <dt>Total spent</dt>
+        <dd>${peso(selectedCustomer.totalSpent || 0)}</dd>
+      </div>
+      <div>
+        <dt>Last order</dt>
+        <dd>${escapeHTML(lastOrder)}</dd>
+      </div>
+    </dl>
+
+    <div class="customer-activity-block">
+      <h4>Recent orders</h4>
+      <ul class="customer-order-list">
+        ${recentOrders || '<li class="empty-state">No orders found for this customer.</li>'}
+      </ul>
+    </div>
+  `;
+}
+
+function renderCustomerTable() {
+  const body = document.getElementById("customerListBody");
+  if (!body) return;
+
+  const filteredCustomers = getCustomerTableRows(customerFilterState.records);
+  const selectedCustomer = filteredCustomers.find(customer => customer.id === customerFilterState.selectedCustomerId)
+    || filteredCustomers[0]
+    || null;
+
+  if (selectedCustomer) {
+    customerFilterState.selectedCustomerId = selectedCustomer.id;
+  } else {
+    customerFilterState.selectedCustomerId = null;
+  }
+
+  renderCustomerDetailPane(selectedCustomer);
+
+  if (!filteredCustomers.length) {
+    body.innerHTML = '<tr><td colspan="5" class="table-state">No customers match the active filters.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = filteredCustomers.map(customer => {
+    const active = customer.id === selectedCustomer?.id;
+    return `
+      <tr class="customer-row ${active ? "customer-row-selected" : ""}" data-customer-row-id="${escapeHTML(String(customer.id))}" tabindex="0">
+        <td>
+          <span class="customer-name-cell">
+            <span class="customer-table-avatar" aria-hidden="true">${escapeHTML((getCustomerDisplayName(customer).trim().charAt(0) || "C").toUpperCase())}</span>
+            <span>${escapeHTML(getCustomerDisplayName(customer))}</span>
+          </span>
+        </td>
+        <td>
+          <div class="customer-contact-stack">
+            <span>${escapeHTML(customer.email || "No email")}</span>
+            <small>${escapeHTML(customer.phone || "No phone")}</small>
+          </div>
+        </td>
+        <td><span class="customer-order-count">${customer.orderCount || 0}</span></td>
+        <td>${peso(customer.totalSpent || 0)}</td>
+        <td>${formatCustomerStatusBadge(getCustomerStatusLabel(customer))}</td>
+      </tr>
+    `;
+  }).join("");
+
+  document.querySelectorAll("[data-customer-row-id]").forEach(row => {
+    row.addEventListener("click", () => {
+      customerFilterState.selectedCustomerId = row.dataset.customerRowId;
+      renderCustomerTable();
+    });
+
+    row.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        customerFilterState.selectedCustomerId = row.dataset.customerRowId;
+        renderCustomerTable();
+      }
+    });
+  });
+}
+
+function updateCustomerSummary(customers) {
+  const total = customers.length;
+  const active = customers.filter(customer => getCustomerStatusLabel(customer) === "Active").length;
+  const inactive = total - active;
+  const totalSales = customers.reduce((sum, customer) => sum + (Number(customer.totalSpent) || 0), 0);
+
+  document.getElementById("customerTotalCount")?.replaceChildren(document.createTextNode(String(total)));
+  document.getElementById("customerActiveCount")?.replaceChildren(document.createTextNode(String(active)));
+  document.getElementById("customerInactiveCount")?.replaceChildren(document.createTextNode(String(inactive)));
+  document.getElementById("customerSalesTotal")?.replaceChildren(document.createTextNode(peso(totalSales)));
+}
+
+async function loadCustomers() {
+  const body = document.getElementById("customerListBody");
+  if (!body) return;
+
+  body.innerHTML = '<tr><td colspan="5" class="table-state">Loading customer records...</td></tr>';
+
+  try {
+    const orderResponse = await db
+      .from("orders")
+      .select("id, customer_id, customer_name, phone, total, created_at, status")
+      .order("created_at", { ascending: false });
+
+    if (orderResponse.error) throw orderResponse.error;
+
+    let profiles = [];
+    try {
+      const profileResponse = await db
+        .from("profiles")
+        .select("id, full_name, email, phone, created_at")
+        .limit(1000);
+
+      if (profileResponse.error) {
+        console.warn("Profiles not available for customer list.", profileResponse.error);
+      } else {
+        profiles = profileResponse.data || [];
+      }
+    } catch (profileError) {
+      console.warn("Profiles lookup unavailable for customer list.", profileError);
+    }
+
+    const profileMap = new Map((profiles || []).map(profile => [String(profile.id), profile]));
+    const customerMap = new Map();
+
+    (orderResponse.data || []).forEach(order => {
+      const customerId = order.customer_id ? String(order.customer_id) : null;
+      const profile = customerId ? profileMap.get(customerId) : null;
+      const normalizedKey = customerId || `guest-${String(order.customer_name || order.phone || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+      const customer = customerMap.get(normalizedKey) || {
+        id: normalizedKey,
+        name: profile?.full_name || order.customer_name || "Guest Customer",
+        email: profile?.email || "",
+        phone: order.phone || profile?.phone || "",
+        createdAt: profile?.created_at || order.created_at || null,
+        totalSpent: 0,
+        orderCount: 0,
+        lastOrder: null,
+        orders: []
+      };
+
+      customer.orderCount += 1;
+      customer.totalSpent += Number(order.total) || 0;
+      customer.lastOrder = customer.lastOrder && new Date(customer.lastOrder) > new Date(order.created_at || customer.lastOrder)
+        ? customer.lastOrder
+        : order.created_at || customer.lastOrder;
+      customer.orders.push(order);
+
+      if (!customer.email && profile?.email) customer.email = profile.email;
+      if (!customer.phone && profile?.phone) customer.phone = profile.phone;
+      if (!customer.name || customer.name === "Guest Customer") {
+        customer.name = profile?.full_name || order.customer_name || "Guest Customer";
+      }
+      if (!customer.createdAt && profile?.created_at) customer.createdAt = profile.created_at;
+
+      customerMap.set(normalizedKey, customer);
+    });
+
+    const customerRecords = [...customerMap.values()].map(customer => ({
+      ...customer,
+      name: customer.name || "Guest Customer",
+      totalSpent: Number(customer.totalSpent) || 0,
+      orderCount: Number(customer.orderCount) || 0,
+      lastOrder: customer.lastOrder || null
+    }));
+
+    customerFilterState.records = customerRecords;
+    customerFilterState.selectedCustomerId = customerRecords[0]?.id || null;
+    updateCustomerSummary(customerRecords);
+    renderCustomerTable();
+    showMessage("", "");
+  } catch (error) {
+    console.error("Failed to load customer records:", error);
+    body.innerHTML = `
+      <tr>
+        <td colspan="5" class="table-state" role="alert">
+          Could not load customer records. Please try again.
+        </td>
+      </tr>
+    `;
+    showMessage("Could not load customer records. Please try again.", "error");
+  }
+}
+
+function resetCustomerFilters() {
+  customerFilterState.search = "";
+  customerFilterState.status = "all";
+  customerFilterState.sort = "name";
+
+  const searchInput = document.getElementById("customerSearchInput");
+  const statusFilter = document.getElementById("customerStatusFilter");
+  const sortSelect = document.getElementById("customerSortSelect");
+
+  if (searchInput) searchInput.value = "";
+  if (statusFilter) statusFilter.value = "all";
+  if (sortSelect) sortSelect.value = "name";
+
+  renderCustomerTable();
+}
+
+function exportCustomerCsv() {
+  const rows = getCustomerTableRows(customerFilterState.records);
+  const csvRows = [
+    ["Customer Name", "Email", "Phone", "Orders", "Total Spent", "Last Order", "Status"],
+    ...rows.map(customer => [
+      customer.name,
+      customer.email,
+      customer.phone,
+      String(customer.orderCount || 0),
+      String(customer.totalSpent || 0),
+      customer.lastOrder || "",
+      getCustomerStatusLabel(customer)
+    ])
+  ];
+
+  const csvContent = csvRows
+    .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "rice-rush-customers.csv";
+  anchor.click();
+  URL.revokeObjectURL(url);
+  showMessage("Customer export downloaded.", "success");
 }
 
 async function loadOrders() {
@@ -576,6 +978,7 @@ async function loadOrders() {
       .select(`
         id,
         customer_id,
+        rider_id,
         customer_name,
         phone,
         order_type,
@@ -592,6 +995,7 @@ async function loadOrders() {
     if (error) throw error;
 
     const orders = data || [];
+    await loadOrderRiders();
 
     const menuItemIds = [
       ...new Set(
@@ -641,7 +1045,11 @@ async function loadOrders() {
     updateDashboardStats();
     renderTopCustomers(allOrders);
     renderTrendingDishes(allOrders, menuItems, menuError);
-    showMessage("");
+    if (orderRidersLoadError) {
+      showMessage("Orders loaded, but rider assignments are unavailable. Check rider table access and the rider-management migration.", "error");
+    } else {
+      showMessage("");
+    }
   } catch (error) {
     console.error("Failed to load orders:", error);
     if (!hasLoadedOrders) {
@@ -719,10 +1127,64 @@ async function updateOrderStatus(orderId, newStatus) {
   }
 
   if (savedStatus) {
+    await loadOrderRiders();
+    renderOrders();
     showMessage(
       `Order #${orderId} updated to ${statusLabels[savedStatus]}.`,
       "success"
     );
+  }
+}
+
+async function updateOrderRider(orderId, riderId) {
+  const orderKey = String(orderId);
+  const order = allOrders.find(item => String(item.id) === orderKey);
+  if (!order || savingOrderRiderIds.has(orderKey)) return;
+
+  const isActiveDelivery = order.order_type === "delivery" &&
+    ["confirmed", "preparing", "ready", "out_for_delivery"].includes(normalizeStatus(order.status));
+  if (riderId && !isActiveDelivery) {
+    showMessage("Riders can only be assigned to confirmed active delivery orders.", "error");
+    renderOrders();
+    return;
+  }
+
+  const selectedRider = riderId
+    ? orderRiders.find(rider => String(rider.id) === String(riderId))
+    : null;
+  if (riderId && (!selectedRider ||
+      (selectedRider.status !== "Available" && String(selectedRider.id) !== String(order.rider_id)))) {
+    showMessage("That rider is not available. Refresh the dashboard and try again.", "error");
+    renderOrders();
+    return;
+  }
+
+  savingOrderRiderIds.add(orderKey);
+  renderOrders();
+  try {
+    const { error } = await db.rpc("assign_order_rider", {
+      p_order_id: orderKey,
+      p_rider_id: riderId || null
+    });
+    if (error) throw error;
+
+    allOrders = allOrders.map(item =>
+      String(item.id) === orderKey
+        ? { ...item, rider_id: riderId || null }
+        : item
+    );
+    await loadOrderRiders();
+    renderOrders();
+    showMessage(riderId
+      ? `Order #${orderKey} assigned to ${selectedRider.full_name}.`
+      : `Rider removed from order #${orderKey}.`, "success");
+  } catch (error) {
+    console.error("Failed to assign rider to order:", error);
+    showMessage(error.message || "Unable to assign this rider. Check the rider-management migration and Supabase permissions.", "error");
+    renderOrders();
+  } finally {
+    savingOrderRiderIds.delete(orderKey);
+    renderOrders();
   }
 }
 
@@ -750,6 +1212,7 @@ function showSection(sectionName) {
   });
 
   if (sectionName === "orders") renderOrders();
+  if (sectionName === "customers") loadCustomers();
 }
 
 async function verifyAdmin(user) {
@@ -826,6 +1289,11 @@ function subscribeToOrderChanges() {
       schema: "public",
       table: "order_items"
     }, () => loadOrders())
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "riders"
+    }, () => loadOrders())
     .subscribe();
 }
 
@@ -851,7 +1319,32 @@ async function initializeAdmin() {
   $("#searchInput")?.addEventListener("input", renderOrders);
   $("#statusFilter")?.addEventListener("change", renderOrders);
 
+  $("#customerSearchInput")?.addEventListener("input", event => {
+    customerFilterState.search = event.target.value.trim();
+    renderCustomerTable();
+  });
+
+  $("#customerStatusFilter")?.addEventListener("change", event => {
+    customerFilterState.status = event.target.value;
+    renderCustomerTable();
+  });
+
+  $("#customerSortSelect")?.addEventListener("change", event => {
+    customerFilterState.sort = event.target.value;
+    renderCustomerTable();
+  });
+
+  $("#customerResetBtn")?.addEventListener("click", resetCustomerFilters);
+  $("#customerExportBtn")?.addEventListener("click", exportCustomerCsv);
+  $("[data-customer-refresh]")?.addEventListener("click", loadCustomers);
+
   document.addEventListener("change", event => {
+    const riderSelect = event.target.closest(".order-rider-select");
+    if (riderSelect?.dataset.orderRiderId) {
+      updateOrderRider(riderSelect.dataset.orderRiderId, riderSelect.value);
+      return;
+    }
+
     const select = event.target.closest(".order-status-select");
     if (!select) return;
 
@@ -927,6 +1420,10 @@ async function initializeAdmin() {
     }
 
     showDashboard(user);
+    const requestedSection = window.location.hash.replace(/^#section-/, "");
+    if (["overview", "orders", "customers", "reports", "settings", "account"].includes(requestedSection)) {
+      showSection(requestedSection);
+    }
   } catch (error) {
     console.error("Admin session verification failed:", error);
     redirectToSharedLogin("profile-error");

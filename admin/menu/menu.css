@@ -171,7 +171,7 @@ body {
   min-width: 0;
   border: 1px solid var(--menu-border);
   border-radius: 18px;
-  background: var(--menu-surface);
+  background: linear-gradient(#26170f,#e65100);
   box-shadow: 0 8px 28px rgba(62, 39, 35, 0.08);
 }
 

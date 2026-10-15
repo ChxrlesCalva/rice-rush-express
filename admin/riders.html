@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff8ef">
+  <title>Rider Management | Rice Rush Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="riders.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="riders.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="admin.html" aria-label="Rice Rush Express admin dashboard">
+      <img class="brand-logo" src="../images/newlogo.png" alt="">
+      <span>Rice Rush <span class="brand-accent">Express</span></span>
+    </a>
+
+    <div class="topbar-actions">
+      <span id="riderAdminEmail" class="admin-email">Administrator</span>
+      <button id="riderLogoutBtn" class="btn btn-signout" type="button">
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="riderManagement" class="container rider-page hidden">
+    <aside class="sidebar rider-sidebar">
+      <div class="sidebar-heading">
+        <span class="sidebar-label">MAIN MENU</span>
+      </div>
+      <nav class="sidebar-nav" aria-label="Admin navigation">
+        <a class="nav-item" href="admin.html#section-overview"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+        <a class="nav-item" href="admin.html#section-orders"><span class="nav-icon">🛍</span><span>All Orders</span></a>
+        <a class="nav-item" href="menu/menu.html"><span class="nav-icon">🍱</span><span>Food Menu</span></a>
+        <a class="nav-item" href="admin.html#section-customers"><span class="nav-icon">♙</span><span>Customers</span></a>
+        <a class="nav-item active" href="riders.html" aria-current="page"><span class="nav-icon">🚚</span><span>Rider Management</span></a>
+      </nav>
+    </aside>
+
+    <section class="admin-main rider-main">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">DELIVERY OPERATIONS</p>
+          <h1>Rider Management</h1>
+          <p>Manage rider profiles and review delivery orders.</p>
+        </div>
+        <button id="riderRefreshBtn" class="btn btn-light" type="button">
+          <span aria-hidden="true">↻</span> Refresh
+        </button>
+      </div>
+
+      <section class="rider-schema-notice" aria-labelledby="riderSetupTitle">
+        <div class="rider-notice-icon" aria-hidden="true">!</div>
+        <div>
+          <h2 id="riderSetupTitle">Rider and assignment rules</h2>
+          <p>
+            Active delivery assignments update rider availability. Only Available riders can
+            receive another active order; the database migration also protects this rule.
+          </p>
+        </div>
+      </section>
+
+      <div class="stats-grid rider-stats-grid">
+        <article class="stat-card">
+          <div class="stat-card-heading"><span class="stat-icon orders-icon" aria-hidden="true">♙</span><span>Total Riders</span></div>
+          <strong id="riderCount">—</strong>
+          <small>Rider profiles in the system</small>
+        </article>
+        <article class="stat-card">
+          <div class="stat-card-heading"><span class="stat-icon active-customers-icon" aria-hidden="true">✓</span><span>Available Riders</span></div>
+          <strong id="activeRiderCount">—</strong>
+          <small>Status marked Available</small>
+        </article>
+        <article class="stat-card">
+          <div class="stat-card-heading"><span class="stat-icon cancelled-icon" aria-hidden="true">↻</span><span>Delivery Orders</span></div>
+          <strong id="deliveryOrderCount">—</strong>
+          <small>All delivery orders loaded</small>
+        </article>
+      </div>
+
+      <section class="content-panel rider-records-panel" aria-labelledby="riderRecordsTitle">
+        <div class="panel-heading rider-panel-heading">
+          <div>
+            <p class="eyebrow">RIDER DIRECTORY</p>
+            <h2 id="riderRecordsTitle">Rider Records</h2>
+            <p>Add, update, or remove rider profile information.</p>
+          </div>
+        </div>
+
+        <form id="riderForm" class="rider-form">
+          <input id="riderId" name="id" type="hidden">
+          <label>
+            Full name
+            <input id="riderFullName" name="full_name" type="text" autocomplete="name" required maxlength="160">
+          </label>
+          <label>
+            Phone
+            <input id="riderPhone" name="phone" type="tel" autocomplete="tel" required maxlength="40">
+          </label>
+          <label>
+            Email
+            <input id="riderEmail" name="email" type="email" autocomplete="email" maxlength="254">
+          </label>
+          <label>
+            Vehicle type
+            <input id="riderVehicleType" name="vehicle_type" type="text" value="Motorcycle" required maxlength="80">
+          </label>
+          <label>
+            Plate number
+            <input id="riderPlateNumber" name="plate_number" type="text" maxlength="40">
+          </label>
+          <label>
+            Status
+            <select id="riderStatus" name="status" required>
+              <option value="Available">Available</option>
+              <option value="On Delivery">On Delivery</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </label>
+          <div class="rider-form-actions">
+            <button id="riderSaveBtn" class="btn btn-primary" type="submit">Add Rider</button>
+            <button id="riderCancelEditBtn" class="btn btn-light hidden" type="button">Cancel Edit</button>
+          </div>
+        </form>
+
+        <div class="rider-list-tools">
+          <label>
+            <span class="sr-only">Search rider name or phone</span>
+            <input id="riderSearchInput" type="search" placeholder="Search by rider name or phone" aria-label="Search riders by name or phone">
+          </label>
+          <label>
+            <span class="sr-only">Filter riders by status</span>
+            <select id="riderStatusFilter" aria-label="Filter riders by status">
+              <option value="all">All statuses</option>
+              <option value="Available">Available</option>
+              <option value="On Delivery">On Delivery</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </label>
+          <button id="riderClearFilters" class="btn btn-light" type="button">Clear filters</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table rider-directory-table">
+            <thead>
+              <tr>
+                <th scope="col">Rider</th>
+                <th scope="col">Contact</th>
+                <th scope="col">Vehicle</th>
+                <th scope="col">Plate Number</th>
+                <th scope="col">Status</th>
+                <th scope="col">Registered</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="riderListBody" aria-live="polite">
+              <tr><td colspan="7" class="table-state">Loading riders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="content-panel rider-orders-panel" aria-labelledby="deliveryOrdersTitle">
+        <div class="panel-heading rider-panel-heading">
+          <div>
+            <p class="eyebrow">DELIVERY QUEUE</p>
+            <h2 id="deliveryOrdersTitle">Delivery Orders</h2>
+            <p>Real delivery orders from the existing orders table.</p>
+          </div>
+          <div class="rider-filters">
+            <label>
+              <span class="sr-only">Search delivery orders</span>
+              <input id="deliverySearch" type="search" placeholder="Search order, customer, phone" aria-label="Search delivery orders">
+            </label>
+            <label>
+              <span class="sr-only">Filter delivery order status</span>
+              <select id="deliveryStatusFilter" aria-label="Filter by delivery order status">
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table rider-orders-table">
+            <thead>
+              <tr>
+                <th scope="col">Order</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Delivery Address</th>
+                <th scope="col">Order Date</th>
+                <th scope="col">Total</th>
+                <th scope="col">Status</th>
+                <th scope="col">Assigned Rider</th>
+              </tr>
+            </thead>
+            <tbody id="deliveryOrdersBody" aria-live="polite">
+              <tr><td colspan="7" class="table-state">Loading delivery orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <p id="riderMessage" class="message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>

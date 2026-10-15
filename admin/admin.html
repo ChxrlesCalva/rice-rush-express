@@ -60,6 +60,11 @@
             <span>Customers</span>
           </button>
 
+          <a class="nav-item" href="riders.html">
+            <span class="nav-icon">🚚</span>
+            <span>Rider Management</span>
+          </a>
+
           <button class="nav-item" type="button" data-section="reports">
             <span class="nav-icon">▤</span>
             <span>Reports</span>
@@ -265,12 +270,127 @@
             <div>
               <p class="eyebrow">CUSTOMER MANAGEMENT</p>
               <h1>Customers</h1>
-              <p>Customer information and order history.</p>
+              <p>Track active customers, recent order activity, and account details.</p>
             </div>
           </div>
 
-          <div class="empty-state">
-            Customer management has not been connected yet.
+          <div class="customer-management-shell">
+            <div class="customer-summary-grid">
+              <article class="stat-card customer-summary-card">
+                <div class="stat-card-heading">
+                  <span class="stat-icon customers-icon" aria-hidden="true">◎</span>
+                  <span>Total Customers</span>
+                </div>
+                <strong id="customerTotalCount">0</strong>
+                <small>Registered customers in the system</small>
+              </article>
+
+              <article class="stat-card customer-summary-card">
+                <div class="stat-card-heading">
+                  <span class="stat-icon active-customers-icon" aria-hidden="true">✓</span>
+                  <span>Active Customers</span>
+                </div>
+                <strong id="customerActiveCount">0</strong>
+                <small>Customers with recent orders</small>
+              </article>
+
+              <article class="stat-card customer-summary-card">
+                <div class="stat-card-heading">
+                  <span class="stat-icon inactive-customers-icon" aria-hidden="true">◌</span>
+                  <span>Inactive Customers</span>
+                </div>
+                <strong id="customerInactiveCount">0</strong>
+                <small>Customers with no recent orders</small>
+              </article>
+
+              <article class="stat-card customer-summary-card">
+                <div class="stat-card-heading">
+                  <span class="stat-icon customer-orders-icon" aria-hidden="true">₱</span>
+                  <span>Total Customer Sales</span>
+                </div>
+                <strong id="customerSalesTotal">₱0.00</strong>
+                <small>Revenue across all customer orders</small>
+              </article>
+            </div>
+
+            <div class="customer-management-layout">
+              <section class="content-panel customer-table-panel" aria-labelledby="customerTableTitle">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">CUSTOMER LIST</p>
+                    <h2 id="customerTableTitle">Customer Records</h2>
+                    <p>Search, filter, and review customer activity.</p>
+                  </div>
+                  <button id="customerRefreshBtn" class="btn btn-light" type="button" data-customer-refresh>
+                    <span aria-hidden="true">↻</span>
+                    <span>Refresh</span>
+                  </button>
+                </div>
+
+                <div class="customer-toolbar">
+                  <label class="customer-search-field" for="customerSearchInput">
+                    <span class="sr-only">Search customers</span>
+                    <input id="customerSearchInput" type="search" placeholder="Search customer name, email or phone" aria-label="Search customer records">
+                  </label>
+
+                  <div class="customer-toolbar-actions">
+                    <label class="customer-field">
+                      <span class="sr-only">Filter by customer status</span>
+                      <select id="customerStatusFilter" aria-label="Filter customers by status">
+                        <option value="all">All status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </label>
+
+                    <label class="customer-field">
+                      <span class="sr-only">Sort customers</span>
+                      <select id="customerSortSelect" aria-label="Sort customers">
+                        <option value="name">Sort by name</option>
+                        <option value="orders">Sort by order count</option>
+                        <option value="lastOrder">Sort by recent order</option>
+                        <option value="totalSpent">Sort by total spent</option>
+                      </select>
+                    </label>
+
+                    <button id="customerResetBtn" class="btn btn-light" type="button">Reset</button>
+                    <button id="customerExportBtn" class="btn btn-primary" type="button">Export CSV</button>
+                  </div>
+                </div>
+
+                <div class="admin-table-wrapper">
+                  <table class="admin-table customer-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Contact</th>
+                        <th scope="col">Orders</th>
+                        <th scope="col">Total Spent</th>
+                        <th scope="col">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="customerListBody">
+                      <tr>
+                        <td colspan="5" class="table-state">Loading customer records...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <aside class="content-panel customer-detail-panel" aria-labelledby="customerDetailTitle">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">DETAIL VIEW</p>
+                    <h2 id="customerDetailTitle">Customer Profile</h2>
+                  </div>
+                </div>
+
+                <div id="customerDetails" class="customer-detail-body">
+                  <div class="empty-state">Select a customer to view their details.</div>
+                </div>
+              </aside>
+            </div>
           </div>
         </section>
 

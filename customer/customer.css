@@ -57,7 +57,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 10px;
   color: #eae2e0;
   background: #000000;
   position: sticky;
@@ -153,7 +153,7 @@ a {
   justify-content: space-between;
   gap: 40px;
   overflow: hidden;
-  background: linear-gradient(120deg, #9a6345, #110f0e);
+  background: linear-gradient(120deg, #cf4901, #000000);
 }
 
 .hero > div:first-child {
