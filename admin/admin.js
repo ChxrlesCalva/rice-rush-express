@@ -47,6 +47,10 @@ let allOrders = [];
 let currentUser = null;
 let orderChannel = null;
 let isLoadingOrders = false;
+let hasLoadedOrders = false;
+const savingOrderIds = new Set();
+const pendingOrderStatuses = new Map();
+const expandedOrderItems = new Set();
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -114,16 +118,26 @@ function formatDate(dateValue) {
 }
 
 function normalizeStatus(status) {
-  const normalized = String(status || "pending").toLowerCase();
-  return statuses.includes(normalized) ? normalized : "pending";
+  return String(status || "pending").toLowerCase();
+}
+
+function getStatusText(status) {
+  const normalized = normalizeStatus(status);
+  if (statusLabels[normalized]) return statusLabels[normalized];
+
+  return normalized
+    .split("_")
+    .map(word => word ? word[0].toUpperCase() + word.slice(1) : "")
+    .join(" ") || "Status unavailable";
 }
 
 function statusBadge(status) {
   const normalized = normalizeStatus(status);
+  const statusClass = statuses.includes(normalized) ? normalized : "unknown";
 
   return `
-    <span class="status-badge status-${normalized}">
-      ${escapeHTML(statusLabels[normalized])}
+    <span class="status-badge status-${statusClass}">
+      ${escapeHTML(getStatusText(normalized))}
     </span>
   `;
 }
@@ -173,38 +187,67 @@ function getOrderItemPrice(item) {
   );
 }
 
+function createOrderItem(item) {
+  return `
+    <div class="ordered-item-with-image">
+      ${createFoodImage(item)}
+      <div class="ordered-item-info">
+        <strong class="ordered-item-name">
+          ${escapeHTML(getOrderItemName(item))}
+        </strong>
+        <span class="ordered-item-quantity">
+          Quantity: ${Number(item.quantity) || 0}
+        </span>
+        <strong class="ordered-item-price">
+          ${peso(getOrderItemPrice(item))}
+        </strong>
+      </div>
+    </div>
+  `;
+}
+
 function createOrderItems(order) {
   const items = getOrderItems(order);
+  const orderKey = String(order.id);
+  const expanded = expandedOrderItems.has(orderKey);
 
   if (!items.length) {
     return `<p class="empty-state">No food items found for this order.</p>`;
   }
 
+  if (items.length === 1) {
+    return `<div class="ordered-items-list">${createOrderItem(items[0])}</div>`;
+  }
+
+  const itemsId = `order-items-${escapeHTML(orderKey)}`;
+
   return `
-    <div class="ordered-items-list">
-      ${items.map(item => `
-        <div class="ordered-item-with-image">
-          ${createFoodImage(item)}
-          <div class="ordered-item-info">
-            <strong class="ordered-item-name">
-              ${escapeHTML(getOrderItemName(item))}
-            </strong>
-            <span class="ordered-item-quantity">
-              Quantity: ${Number(item.quantity) || 0}
-            </span>
-            <strong class="ordered-item-price">
-              ${peso(getOrderItemPrice(item))}
-            </strong>
-          </div>
-        </div>
-      `).join("")}
+    <div class="order-item-preview" ${expanded ? "hidden" : ""}>
+      ${createOrderItem(items[0])}
     </div>
+    <div id="${itemsId}" class="ordered-items-list order-item-details" ${expanded ? "" : "hidden"}>
+      ${items.map(createOrderItem).join("")}
+    </div>
+    <button
+      class="order-items-toggle"
+      type="button"
+      data-toggle-order-items="${escapeHTML(orderKey)}"
+      data-item-count="${items.length}"
+      aria-expanded="${expanded}"
+      aria-controls="${itemsId}"
+    >
+      ${expanded ? "Show fewer items" : `Show all ${items.length} items`}
+    </button>
   `;
 }
 
 function createOrderCard(order) {
-  const orderId = escapeHTML(order.id);
+  const orderKey = String(order.id);
+  const orderId = escapeHTML(orderKey);
   const status = normalizeStatus(order.status);
+  const selectedStatus = pendingOrderStatuses.get(orderKey) ||
+    (statuses.includes(status) ? status : "");
+  const isSaving = savingOrderIds.has(orderKey);
 
   return `
     <article class="order-card" data-order-id="${orderId}">
@@ -242,13 +285,18 @@ function createOrderCard(order) {
             class="order-status-select"
             data-order-id="${orderId}"
             aria-label="Update status for order ${orderId}"
+            ${isSaving ? "disabled" : ""}
           >
+            ${statuses.includes(status) ? "" : `
+              <option value="" selected disabled>${escapeHTML(getStatusText(status))}</option>
+            `}
             ${statuses.map(option => `
-              <option value="${option}" ${option === status ? "selected" : ""}>
+              <option value="${option}" ${option === selectedStatus ? "selected" : ""}>
                 ${escapeHTML(statusLabels[option])}
               </option>
             `).join("")}
           </select>
+          <span class="order-saving-indicator ${isSaving ? "" : "hidden"}" role="status">Saving...</span>
         </label>
       </div>
     </article>
@@ -280,13 +328,31 @@ function getFilteredOrders() {
 
 function renderOrders() {
   const ordersList = $("#ordersList");
-  if (!ordersList) return;
+  if (!ordersList || !hasLoadedOrders) return;
 
   const filteredOrders = getFilteredOrders();
+  const selectedStatus = $("#statusFilter")?.value || "all";
+  const search = ($("#searchInput")?.value || "").trim();
 
-  ordersList.innerHTML = filteredOrders.length
-    ? filteredOrders.map(createOrderCard).join("")
-    : `<div class="empty-state">No orders match your search or selected status.</div>`;
+  if (filteredOrders.length) {
+    ordersList.innerHTML = filteredOrders.map(createOrderCard).join("");
+  } else if (!allOrders.length) {
+    ordersList.innerHTML = `<div class="empty-state" role="status">No orders found.</div>`;
+  } else if (selectedStatus !== "all" && !search) {
+    ordersList.innerHTML = `
+      <div class="empty-state" role="status">
+        <p>No orders found for this status.</p>
+        <button class="btn btn-light" type="button" data-clear-status-filter>
+          Show All Statuses
+        </button>
+      </div>
+    `;
+  } else {
+    ordersList.innerHTML =
+      `<div class="empty-state" role="status">No orders match your search or selected status.</div>`;
+  }
+
+  ordersList.setAttribute("aria-busy", String(isLoadingOrders));
 
   const summary = $("#orderSummary");
 
@@ -494,6 +560,15 @@ async function loadOrders() {
   if (isLoadingOrders || !db) return;
 
   isLoadingOrders = true;
+  setRefreshButtons(true);
+
+  const ordersList = $("#ordersList");
+  if (ordersList) {
+    ordersList.setAttribute("aria-busy", "true");
+    if (!hasLoadedOrders) {
+      ordersList.innerHTML = '<div class="empty-state" role="status">Loading orders...</div>';
+    }
+  }
 
   try {
     const { data, error } = await db
@@ -561,6 +636,7 @@ async function loadOrders() {
       }))
     }));
 
+    hasLoadedOrders = true;
     renderOrders();
     updateDashboardStats();
     renderTopCustomers(allOrders);
@@ -568,23 +644,41 @@ async function loadOrders() {
     showMessage("");
   } catch (error) {
     console.error("Failed to load orders:", error);
-    setDashboardDataUnavailable();
-    $("#ordersList").innerHTML =
-      '<div class="empty-state" role="alert">Could not load orders. Please refresh and try again.</div>';
-    showMessage(error.message || "Unable to load orders. Please try again.", "error");
+    if (!hasLoadedOrders) {
+      setDashboardDataUnavailable();
+      if (ordersList) {
+        ordersList.innerHTML = `
+          <div class="empty-state" role="alert">
+            <p>Could not load orders. Please try again.</p>
+            <button class="btn btn-light" type="button" data-retry-orders>
+              Try Again
+            </button>
+          </div>
+        `;
+      }
+      if ($("#orderSummary")) {
+        $("#orderSummary").textContent = "Orders could not be loaded.";
+      }
+    }
+    showMessage("Could not load orders. Please try again.", "error");
   } finally {
     isLoadingOrders = false;
+    setRefreshButtons(false);
+    ordersList?.setAttribute("aria-busy", "false");
   }
 }
 
-async function updateOrderStatus(orderId, newStatus, selectElement) {
+async function updateOrderStatus(orderId, newStatus) {
   if (!statuses.includes(newStatus)) {
     showMessage("Invalid order status.", "error");
     return;
   }
 
+  const orderKey = String(orderId);
+  if (savingOrderIds.has(orderKey)) return;
+
   const previousOrder = allOrders.find(
-    order => String(order.id) === String(orderId)
+    order => String(order.id) === orderKey
   );
 
   if (!previousOrder) {
@@ -596,7 +690,10 @@ async function updateOrderStatus(orderId, newStatus, selectElement) {
 
   if (previousStatus === newStatus) return;
 
-  if (selectElement) selectElement.disabled = true;
+  savingOrderIds.add(orderKey);
+  pendingOrderStatuses.set(orderKey, newStatus);
+  renderOrders();
+  let savedStatus = null;
 
   try {
     const { error } = await db
@@ -605,26 +702,42 @@ async function updateOrderStatus(orderId, newStatus, selectElement) {
       .eq("id", orderId);
 
     if (error) throw error;
-
+    savedStatus = newStatus;
     allOrders = allOrders.map(order =>
-      String(order.id) === String(orderId)
-        ? { ...order, status: newStatus }
+      String(order.id) === orderKey
+        ? { ...order, status: savedStatus }
         : order
     );
-
-    renderOrders();
-    updateDashboardStats();
-
-    showMessage(`Order #${orderId} updated to ${statusLabels[newStatus]}.`, "success");
   } catch (error) {
     console.error("Failed to update order status:", error);
-    showMessage(error.message || "Unable to update the order status.", "error");
-
-    if (selectElement) {
-      selectElement.value = previousStatus;
-      selectElement.disabled = false;
-    }
+    showMessage("Unable to update the order status. Please try again.", "error");
+  } finally {
+    savingOrderIds.delete(orderKey);
+    pendingOrderStatuses.delete(orderKey);
+    renderOrders();
+    updateDashboardStats();
   }
+
+  if (savedStatus) {
+    showMessage(
+      `Order #${orderId} updated to ${statusLabels[savedStatus]}.`,
+      "success"
+    );
+  }
+}
+
+function setRefreshButtons(isRefreshing) {
+  document.querySelectorAll("[data-refresh-orders]").forEach(button => {
+    const label = button.querySelector("[data-refresh-label]");
+    if (label) {
+      label.textContent = isRefreshing
+        ? "Refreshing..."
+        : button.id === "refreshBtn" ? "Refresh" : "Refresh Orders";
+    }
+
+    button.disabled = isRefreshing;
+    button.setAttribute("aria-busy", String(isRefreshing));
+  });
 }
 
 function showSection(sectionName) {
@@ -730,7 +843,6 @@ async function initializeAdmin() {
   }
 
   $("#logoutBtn")?.addEventListener("click", handleLogout);
-  $("#refreshBtn")?.addEventListener("click", loadOrders);
 
   document.querySelectorAll("[data-section]").forEach(button => {
     button.addEventListener("click", () => showSection(button.dataset.section));
@@ -743,11 +855,45 @@ async function initializeAdmin() {
     const select = event.target.closest(".order-status-select");
     if (!select) return;
 
-    updateOrderStatus(select.dataset.orderId, select.value, select);
+    updateOrderStatus(select.dataset.orderId, select.value);
   });
 
   document.querySelectorAll("[data-refresh-orders]").forEach(button => {
     button.addEventListener("click", loadOrders);
+  });
+
+  document.addEventListener("click", event => {
+    const itemsToggle = event.target.closest("[data-toggle-order-items]");
+    if (itemsToggle) {
+      const orderKey = itemsToggle.dataset.toggleOrderItems;
+      const orderCard = itemsToggle.closest(".order-card");
+      const preview = orderCard?.querySelector(".order-item-preview");
+      const details = orderCard?.querySelector(".order-item-details");
+      const expanded = itemsToggle.getAttribute("aria-expanded") !== "true";
+
+      if (expanded) {
+        expandedOrderItems.add(orderKey);
+      } else {
+        expandedOrderItems.delete(orderKey);
+      }
+
+      if (preview) preview.hidden = expanded;
+      if (details) details.hidden = !expanded;
+      itemsToggle.setAttribute("aria-expanded", String(expanded));
+      itemsToggle.textContent = expanded
+        ? "Show fewer items"
+        : `Show all ${itemsToggle.dataset.itemCount} items`;
+      return;
+    }
+
+    if (event.target.closest("[data-clear-status-filter]")) {
+      $("#statusFilter").value = "all";
+      renderOrders();
+    }
+
+    if (event.target.closest("[data-retry-orders]")) {
+      loadOrders();
+    }
   });
 
   db.auth.onAuthStateChange((event, session) => {

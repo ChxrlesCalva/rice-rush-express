@@ -47,7 +47,7 @@
 
           <button class="nav-item" type="button" data-section="orders">
             <span class="nav-icon">🛍</span>
-            <span>Orders</span>
+            <span>All Order</span>
           </button>
 
           <a class="nav-item" href="menu/menu.html">
@@ -104,8 +104,9 @@
               <p>Welcome back! Here's what's happening with your orders.</p>
             </div>
 
-            <button id="refreshBtn" class="btn btn-light" type="button">
-              ↻ Refresh
+            <button id="refreshBtn" class="btn btn-light" type="button" data-refresh-orders>
+              <span aria-hidden="true">↻</span>
+              <span data-refresh-label>Refresh</span>
             </button>
           </div>
 
@@ -196,33 +197,54 @@
         </section>
 
         <section id="section-orders" class="content-section hidden">
-          <div class="page-heading">
+          <div class="page-heading order-page-heading">
             <div>
-              <p class="eyebrow">ORDER MANAGEMENT</p>
-              <h1>Customer Orders</h1>
-              <p>Review orders, see ordered food, and update order statuses.</p>
+              <p class="eyebrow">ADMINISTRATION</p>
+              <h1>Order Management</h1>
             </div>
 
             <button class="btn btn-light" type="button" data-refresh-orders>
-              ↻ Refresh Orders
+              <span aria-hidden="true">↻</span>
+              <span data-refresh-label>Refresh Orders</span>
             </button>
           </div>
 
-          <section class="orders-panel">
-            <div class="orders-toolbar">
-              <div>
-                <h2>All Orders</h2>
-                <p id="orderSummary">Loading orders...</p>
+          <div class="orders-intro">
+            <h2>Customers Orders</h2>
+            <p>Review orders, see ordered food, and update order statuses.</p>
+          </div>
+
+          <div class="orders-workspace">
+            <section class="orders-panel order-list-panel" aria-labelledby="orderListsHeading">
+              <div class="orders-toolbar">
+                <div>
+                  <h2 id="orderListsHeading">Order Lists</h2>
+                  <p id="orderSummary">Loading orders...</p>
+                </div>
+
+                <div class="filters order-search">
+                  <input
+                    id="searchInput"
+                    type="search"
+                    placeholder="Search customer or order ID"
+                    aria-label="Search orders"
+                  >
+                </div>
               </div>
 
-              <div class="filters">
-                <input
-                  id="searchInput"
-                  type="search"
-                  placeholder="Search customer or order ID"
-                  aria-label="Search orders"
-                >
+              <div id="ordersList" class="orders-list" aria-live="polite" aria-busy="true">
+                <div class="empty-state" role="status">Loading orders...</div>
+              </div>
+            </section>
 
+            <aside class="order-filter-panel" aria-labelledby="orderFilterHeading">
+              <div>
+                <p class="eyebrow">REFINE LIST</p>
+                <h2 id="orderFilterHeading">Order Status</h2>
+                <p class="order-filter-description">Show orders by their current status.</p>
+              </div>
+              <div class="order-filter-control">
+                <label for="statusFilter">Filter by status</label>
                 <select id="statusFilter" aria-label="Filter by status">
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -234,10 +256,8 @@
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
-            </div>
-
-            <div id="ordersList" class="orders-list"></div>
-          </section>
+            </aside>
+          </div>
         </section>
 
         <section id="section-customers" class="content-section hidden">
