@@ -1,6 +1,11 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 :root {
@@ -9,7 +14,7 @@
   --menu-surface-raised: #211c19;
   --menu-text: #f5eee8;
   --menu-muted: #b8aaa0;
-  --menu-border: #39312d;
+  --menu-border:#26170f;
   --menu-orange: #E65100;
 }
 
@@ -171,7 +176,7 @@ body {
   min-width: 0;
   border: 1px solid var(--menu-border);
   border-radius: 18px;
-  background: linear-gradient(#26170f,#e65100);
+  background: #e65100;
   box-shadow: 0 8px 28px rgba(62, 39, 35, 0.08);
 }
 

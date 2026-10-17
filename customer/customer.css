@@ -17,6 +17,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 html {
@@ -1027,6 +1032,38 @@ footer small {
   resize: vertical;
 }
 
+.delivery-map-help {
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.delivery-map {
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  z-index: 0;
+}
+
+.delivery-map-message {
+  min-height: 1.4em;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.delivery-map-message.error {
+  color: #ff8a80;
+}
+
+.delivery-map-attribution {
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.4;
+}
+
 .checkout-total {
   padding: 15px 0 5px;
   margin-top: 8px;
@@ -1185,6 +1222,10 @@ footer small {
 
   .checkout-modal {
     padding: 25px 18px;
+  }
+
+  .delivery-map {
+    height: 230px;
   }
 }
 

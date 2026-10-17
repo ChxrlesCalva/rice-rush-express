@@ -27,6 +27,8 @@ const checkoutTotal = $("#checkoutTotal");
 const orderMethod = $("#orderMethod");
 const addressField = $("#addressField");
 const customerAddress = $("#customerAddress");
+const deliveryMapElement = $("#deliveryMap");
+const deliveryMapMessage = $("#deliveryMapMessage");
 const ordersList = $("#ordersList");
 const myOrdersLinks = document.querySelectorAll("[data-my-orders-link]");
 const toast = $("#toast");
@@ -41,6 +43,12 @@ let highlightedOrderId = new URLSearchParams(window.location.search).get("order"
 let submittingOrder = false;
 let navigationIdleTimer;
 let categoryIdleTimer;
+let deliveryMap = null;
+let deliveryBoundaryLayer = null;
+let deliveryPin = null;
+let deliveryBoundaryGeoJSON = null;
+let deliveryBoundaryPromise = null;
+let selectedDeliveryLocation = null;
 
 const mobileNavigationQuery = window.matchMedia("(max-width: 760px)");
 
@@ -378,10 +386,222 @@ function openCheckout() {
   if (checkoutTotal) checkoutTotal.textContent = peso(getCartDetails().total);
 
   checkoutBackdrop?.classList.add("open");
+  updateAddressRequirement();
 }
 
 function closeCheckout() {
   checkoutBackdrop?.classList.remove("open");
+}
+
+function setDeliveryMapMessage(message, isError = false) {
+  if (!deliveryMapMessage) return;
+
+  deliveryMapMessage.textContent = message;
+  deliveryMapMessage.classList.toggle("error", isError);
+}
+
+function loadDanaoBoundary() {
+  if (deliveryBoundaryGeoJSON) {
+    return Promise.resolve(deliveryBoundaryGeoJSON);
+  }
+
+  if (!deliveryBoundaryPromise) {
+    deliveryBoundaryPromise = fetch("danao-city-boundary.geojson")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Boundary data request failed (${response.status}).`);
+        }
+
+        return response.json();
+      })
+      .then(boundary => {
+        const geometry = boundary?.geometry;
+        const polygons = geometry?.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry?.type === "MultiPolygon"
+            ? geometry.coordinates
+            : null;
+
+        if (
+          boundary?.properties?.shapeName !== "Danao City" ||
+          !Array.isArray(polygons) ||
+          !polygons.length ||
+          polygons.some(polygon =>
+            !Array.isArray(polygon) ||
+            !Array.isArray(polygon[0]) ||
+            polygon[0].length < 4
+          )
+        ) {
+          throw new Error("Danao City boundary data is missing or invalid.");
+        }
+
+        deliveryBoundaryGeoJSON = boundary;
+        return boundary;
+      })
+      .catch(error => {
+        deliveryBoundaryPromise = null;
+        throw error;
+      });
+  }
+
+  return deliveryBoundaryPromise;
+}
+
+function pointIsInRing(point, ring) {
+  const longitude = point.lng;
+  const latitude = point.lat;
+  let inside = false;
+
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
+    const [longitudeA, latitudeA] = ring[previous];
+    const [longitudeB, latitudeB] = ring[index];
+    const cross =
+      (latitude - latitudeA) * (longitudeB - longitudeA) -
+      (longitude - longitudeA) * (latitudeB - latitudeA);
+
+    if (
+      Math.abs(cross) < 1e-10 &&
+      longitude >= Math.min(longitudeA, longitudeB) - 1e-10 &&
+      longitude <= Math.max(longitudeA, longitudeB) + 1e-10 &&
+      latitude >= Math.min(latitudeA, latitudeB) - 1e-10 &&
+      latitude <= Math.max(latitudeA, latitudeB) + 1e-10
+    ) {
+      return true;
+    }
+
+    const crossesLatitude = (latitudeA > latitude) !== (latitudeB > latitude);
+    if (
+      crossesLatitude &&
+      longitude <
+        ((longitudeB - longitudeA) * (latitude - latitudeA)) /
+          (latitudeB - latitudeA) +
+          longitudeA
+    ) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+function isInsideDanaoCity(point) {
+  const geometry = deliveryBoundaryGeoJSON?.geometry;
+  if (!geometry) return false;
+
+  const polygons = geometry.type === "Polygon"
+    ? [geometry.coordinates]
+    : geometry.type === "MultiPolygon"
+      ? geometry.coordinates
+      : [];
+
+  return polygons.some(polygon =>
+    pointIsInRing(point, polygon[0]) &&
+    !polygon.slice(1).some(hole => pointIsInRing(point, hole))
+  );
+}
+
+function selectDeliveryLocation(point) {
+  selectedDeliveryLocation = {
+    lat: point.lat,
+    lng: point.lng
+  };
+
+  if (!deliveryPin) {
+    deliveryPin = window.L.marker(point, {
+      draggable: true,
+      autoPan: true
+    }).addTo(deliveryMap);
+    deliveryPin.on("dragend", event => {
+      selectDeliveryLocation(event.target.getLatLng());
+    });
+  } else {
+    deliveryPin.setLatLng(point);
+  }
+
+  if (isInsideDanaoCity(point)) {
+    setDeliveryMapMessage(
+      `Location selected: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}.`
+    );
+  } else {
+    setDeliveryMapMessage(
+      "This pin is outside Danao City coverage. Select a location inside the outlined boundary.",
+      true
+    );
+  }
+}
+
+async function initializeDeliveryMap() {
+  if (!deliveryMapElement) return;
+
+  if (deliveryMap) {
+    requestAnimationFrame(() => deliveryMap?.invalidateSize());
+    return;
+  }
+
+  setDeliveryMapMessage("Loading Danao City delivery coverage...");
+  const boundary = await loadDanaoBoundary();
+
+  if (deliveryMap) {
+    requestAnimationFrame(() => deliveryMap?.invalidateSize());
+    return;
+  }
+
+  if (!window.L) {
+    throw new Error("Leaflet could not be loaded. Check your internet connection and reload.");
+  }
+
+  const map = window.L.map(deliveryMapElement, {
+    scrollWheelZoom: false
+  });
+  deliveryMap = map;
+
+  try {
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    deliveryBoundaryLayer = window.L.geoJSON(boundary, {
+      interactive: false,
+      style: {
+        color: "#ff6900",
+        weight: 3,
+        opacity: 0.95,
+        fillColor: "#ff6900",
+        fillOpacity: 0.12
+      }
+    }).addTo(map);
+
+    map.fitBounds(deliveryBoundaryLayer.getBounds(), {
+      padding: [12, 12],
+      maxZoom: 14
+    });
+
+    map.on("click", event => selectDeliveryLocation(event.latlng));
+    requestAnimationFrame(() => map.invalidateSize());
+    setDeliveryMapMessage("Tap the map to place your delivery pin.");
+  } catch (error) {
+    map.remove();
+    deliveryMap = null;
+    deliveryBoundaryLayer = null;
+    throw error;
+  }
+}
+
+function startDeliveryMap() {
+  initializeDeliveryMap().catch(error => {
+    console.error("Could not initialize the delivery map:", error);
+    setDeliveryMapMessage(
+      "Delivery map unavailable. Reload the page and try again; a valid map pin is required for delivery.",
+      true
+    );
+  });
+}
+
+function clearDeliveryLocation() {
+  selectedDeliveryLocation = null;
+  deliveryPin?.remove();
+  deliveryPin = null;
+  setDeliveryMapMessage("Tap the map to place your delivery pin.");
 }
 
 function updateAddressRequirement() {
@@ -392,7 +612,11 @@ function updateAddressRequirement() {
   addressField.hidden = !delivery;
   customerAddress.required = delivery;
 
-  if (!delivery) customerAddress.value = "";
+  if (!delivery) {
+    customerAddress.value = "";
+  } else if (checkoutBackdrop?.classList.contains("open")) {
+    startDeliveryMap();
+  }
 }
 
 function getStatusLabel(status) {
@@ -919,6 +1143,28 @@ if (checkoutForm) {
 
     if (!checkoutForm.reportValidity()) return;
 
+    const method = orderMethod?.value || "delivery";
+
+    if (method === "delivery") {
+      if (!deliveryBoundaryGeoJSON || !selectedDeliveryLocation) {
+        setDeliveryMapMessage(
+          "Choose a delivery pin inside Danao City before placing your order.",
+          true
+        );
+        showToast("Select a valid delivery location on the map.");
+        return;
+      }
+
+      if (!isInsideDanaoCity(selectedDeliveryLocation)) {
+        setDeliveryMapMessage(
+          "This pin is outside Danao City coverage. Select a location inside the outlined boundary.",
+          true
+        );
+        showToast("Delivery is available only within Danao City.");
+        return;
+      }
+    }
+
     const {
       data: { user },
       error: authError
@@ -929,7 +1175,6 @@ if (checkoutForm) {
       return;
     }
 
-    const method = orderMethod?.value || "delivery";
     const name = $("#customerName")?.value.trim() || "";
     const phone = $("#customerPhone")?.value.trim() || "";
     const address = method === "delivery"
@@ -969,6 +1214,12 @@ if (checkoutForm) {
           phone,
           order_type: method,
           delivery_address: address || null,
+          delivery_latitude: method === "delivery"
+            ? selectedDeliveryLocation.lat
+            : null,
+          delivery_longitude: method === "delivery"
+            ? selectedDeliveryLocation.lng
+            : null,
           order_note: note || null,
           payment_method: "cash",
           status: "pending",
@@ -1008,6 +1259,7 @@ if (checkoutForm) {
       cart = {};
       renderCart();
       checkoutForm.reset();
+      clearDeliveryLocation();
 
       if (orderMethod) orderMethod.value = "delivery";
 

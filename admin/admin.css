@@ -16,6 +16,11 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 html {
@@ -2246,7 +2251,7 @@ button:disabled {
   }
 
   .sidebar-nav {
-    scrollbar-width: thin;
+    scrollbar-width: none;
   }
 
   .roadmap-banner {

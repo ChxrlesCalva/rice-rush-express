@@ -11,6 +11,12 @@
     href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
     rel="stylesheet"
   >
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
   <link rel="stylesheet" href="customer.css">
 </head>
 
@@ -220,6 +226,25 @@
             rows="3"
             required
           ></textarea>
+
+          <p class="delivery-map-help">
+            Select a delivery location within Danao City, Cebu. Click or tap the map to place a pin, then drag it to adjust.
+          </p>
+          <div
+            id="deliveryMap"
+            class="delivery-map"
+            role="region"
+            aria-label="Delivery location map"
+          ></div>
+          <p
+            id="deliveryMapMessage"
+            class="delivery-map-message"
+            role="status"
+            aria-live="polite"
+          >Loading Danao City delivery coverage…</p>
+          <small class="delivery-map-attribution">
+            City boundary: geoBoundaries (NAMRIA, PSA, OCHA Philippines), 2020 · CC BY 3.0 IGO
+          </small>
         </div>
 
         <label for="paymentMethod">Payment Method</label>
@@ -252,6 +277,11 @@
   <!-- Load Supabase before your application JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
   <script src="customer.js"></script>
 </body>
 </html>
